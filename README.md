@@ -118,10 +118,10 @@ El usuario normal no ve estas opciones.
 5. **Ventas → Pedidos:** cliente (nuevo o existente), productos y dirección. Botones *✓ Entregado*, *💵 Cobrado* y *WhatsApp* con el pedido ya escrito.
 5b. **Envíos en cada pedido (🚚):**
    - Elige el destino: **Lima (distrito)**, **Provincia** o **Recoge el cliente**.
-   - Anota lo que tú pagas de **envío, embalaje y flete**, y si quieres, lo que **le cobras al cliente** por el envío (se suma al total).
+   - Anota lo que tú pagas en ese pedido de **delivery, embalaje y flete** (cada pedido es un evento), y si quieres, lo que **le cobras al cliente** por el envío (se suma al total).
    - Cada número de cliente recuerda su distrito o provincia, y la app sugiere el costo del último envío a ese destino.
    - En **Reportes → Envíos por destino** ves cuánto cuesta enviar a cada distrito o provincia.
-5c. **🧪 Laboratorista:** en cada lote se anota lo que cobra por esa tanda (suma al costo por unidad; la app sugiere el último monto). Otros pagos suyos van en **Gastos → 🧪 Laboratorista**.
+   - **🧪 Laboratorista (pago quincenal):** en *Producción → 🧪 Laborat.* se registra cada pago de quincena (1–15 y 16–fin de mes). El monto se reparte entre las unidades producidas en esa quincena y suma al costo por unidad. La app muestra si la quincena actual y la anterior están pagadas, y avisa en Inicio si falta registrar una.
 6. **Producción → Gastos:** delivery, luz, publicidad, mano de obra…
 7. **Clientes:** son **números del 1 al 100**, como en el cuaderno del dueño (no se guardan nombres ni teléfonos). Cada número tiene un recuadro ✅ *Registrado* que se activa o desactiva con un toque. Al tocar el número se ve su historial, cuánto compró, cuánto debe y su producto favorito. La cantidad de números se cambia en ⚙️ Ajustes.
 8. **Reportes:** gráficos, ranking de clientes asiduos y descargas para Excel.
