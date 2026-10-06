@@ -284,6 +284,10 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 .cbuy{position:absolute;top:-7px;right:-5px;background:var(--gold);color:var(--night);font-size:.62rem;font-weight:900;border-radius:99px;padding:1px 6px;border:1.5px solid var(--card)}
 .regbig{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;font-weight:800;cursor:pointer}
 .regbig.on{border-color:var(--ok);background:#f3fbf5}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.row3>.field{min-width:0}
+.row3 .field>span{font-size:.8rem}
+.envhint{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--gold-soft);border-radius:10px;padding:7px 10px;font-size:.82rem;margin:-2px 0 10px}
 .install{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--gold);border-radius:var(--r);padding:12px;margin-bottom:14px;box-shadow:var(--shadow)}
 .install img{width:52px;height:52px;border-radius:12px;flex:none}
 .install>div{flex:1;min-width:0}
@@ -361,7 +365,7 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
@@ -372,8 +376,8 @@ const SCHEMA = {
   Insumos:    {f:['id','nombre','unidad','categoria','stockInicial','stockMinimo','costoRef','creado'], num:['stockInicial','stockMinimo','costoRef']},
   Compras:    {f:['id','fecha','insumoId','cantidad','costoTotal','proveedor','nota'], num:['cantidad','costoTotal']},
   Produccion: {f:['id','fecha','productoId','botellas','consumos','costoInsumos','otrosCostos','costoTotal','nota'], num:['botellas','costoInsumos','otrosCostos','costoTotal'], json:['consumos']},
-  Clientes:   {f:['id','numero','registrado','nota','creado'], num:['numero'], bool:['registrado']},
-  Pedidos:    {f:['id','fecha','clienteId','items','total','estado','pagado','metodoPago','direccionEntrega','nota'], num:['total'], json:['items'], bool:['pagado']},
+  Clientes:   {f:['id','numero','registrado','zonaTipo','zona','nota','creado'], num:['numero'], bool:['registrado']},
+  Pedidos:    {f:['id','fecha','clienteId','items','subtotal','total','estado','pagado','metodoPago','zonaTipo','zona','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','direccionEntrega','nota'], num:['subtotal','total','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio'], json:['items'], bool:['pagado']},
   Gastos:     {f:['id','fecha','categoria','descripcion','monto'], num:['monto']},
 };
 const UNIDADES = ['L','ml','kg','g','unidad','caja','paquete'];
@@ -418,7 +422,16 @@ const cliShort=id=>{const n=cliNum(id);return n?`N° ${n}`:'—'};
 const isReg=n=>{const r=byId('Clientes',cliId(n));return !!(r&&r.registrado)};
 const nReg=()=>DB.Clientes.filter(c=>c.registrado&&c.numero>0).length;
 function maxCli(){let m=num(cfg.maxClientes)||100;DB.Clientes.forEach(c=>{if(c.registrado&&c.numero>m)m=c.numero});DB.Pedidos.forEach(p=>{const n=cliNum(p.clienteId);if(n>m)m=n});return m}
-function setRegistrado(n,val){const old=byId('Clientes',cliId(n))||{};saveRow('Clientes',{id:cliId(n),numero:n,registrado:!!val,nota:old.nota||'',creado:old.creado||today()})}
+function setRegistrado(n,val){const old=byId('Clientes',cliId(n))||{};saveRow('Clientes',Object.assign({nota:'',zonaTipo:'',zona:''},old,{id:cliId(n),numero:n,registrado:!!val,creado:old.creado||today()}))}
+function setZonaCliente(n,zt,z){const old=byId('Clientes',cliId(n))||{};if(old.zonaTipo===zt&&old.zona===z)return;saveRow('Clientes',Object.assign({nota:'',registrado:false},old,{id:cliId(n),numero:n,zonaTipo:zt,zona:z,creado:old.creado||today()}))}
+/* ---- Envíos por pedido ---- */
+const LIMA_DISTRITOS=['Ancón','Ate','Barranco','Breña','Carabayllo','Chaclacayo','Chorrillos','Cieneguilla','Comas','El Agustino','Independencia','Jesús María','La Molina','La Victoria','Lima Cercado','Lince','Los Olivos','Lurigancho-Chosica','Lurín','Magdalena del Mar','Miraflores','Pachacámac','Pucusana','Pueblo Libre','Puente Piedra','Punta Hermosa','Punta Negra','Rímac','San Bartolo','San Borja','San Isidro','San Juan de Lurigancho','San Juan de Miraflores','San Luis','San Martín de Porres','San Miguel','Santa Anita','Santa María del Mar','Santa Rosa','Santiago de Surco','Surquillo','Villa El Salvador','Villa María del Triunfo','Callao','Bellavista','Carmen de la Legua','La Perla','La Punta','Ventanilla','Mi Perú'];
+const PROVINCIAS=['Abancay','Arequipa','Ayacucho','Barranca','Cajamarca','Cañete','Cerro de Pasco','Chachapoyas','Chiclayo','Chimbote','Chincha','Cusco','Huacho','Huancavelica','Huancayo','Huánuco','Huaral','Huaraz','Ica','Iquitos','Juliaca','Moquegua','Piura','Pisco','Pucallpa','Puerto Maldonado','Puno','Tacna','Tarapoto','Trujillo','Tumbes'];
+const ZONA_TIPOS=[['Lima','🏙️ Lima (distrito)'],['Provincia','🛣️ Provincia'],['Recojo','🏠 Recoge el cliente']];
+const envioCosto=p=>num(p.costoEnvio)+num(p.costoEmbalaje)+num(p.costoFlete);
+const zonaTxt=p=>p.zonaTipo==='Recojo'?'Recoge el cliente':p.zona?`${p.zona}${p.zonaTipo==='Provincia'?' (provincia)':''}`:'';
+function zonasUsadas(tipo){const o=new Set();DB.Pedidos.forEach(p=>{if(p.zona&&p.zonaTipo===tipo)o.add(p.zona)});DB.Clientes.forEach(c=>{if(c.zona&&c.zonaTipo===tipo)o.add(c.zona)});return [...o]}
+function ultimoEnvio(zt,z,exceptId){if(!z)return null;const k=z.trim().toLowerCase();return [...DB.Pedidos].filter(p=>p.id!==exceptId&&p.zonaTipo===zt&&String(p.zona).trim().toLowerCase()===k&&envioCosto(p)>0).sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id))[0]||null}
 const prodName=p=>p?(p.nombre+(p.presentacion?' '+p.presentacion:'')):'Producto eliminado';
 /* Tipos de producto: Líquido y Sólido de base; el dueño puede crear más (aparecen solos en las listas) */
 const TIPOS_BASE=[['Líquido','💧'],['Sólido','📦']];
@@ -549,10 +562,11 @@ function calc(p){
   const gastos=sum(DB.Gastos.filter(x=>inP(x.fecha,r)),x=>x.monto);
   const lotes=DB.Produccion.filter(x=>inP(x.fecha,r));
   const otros=sum(lotes,x=>x.otrosCostos);
-  const ingresos=sum(cobrados,x=>x.total), costos=compras+gastos+otros;
+  const envEnvio=sum(ped,x=>x.costoEnvio), envEmb=sum(ped,x=>x.costoEmbalaje), envFlete=sum(ped,x=>x.costoFlete), envios=envEnvio+envEmb+envFlete;
+  const ingresos=sum(cobrados,x=>x.total), costos=compras+gastos+otros+envios;
   const botProd=sum(lotes,x=>x.botellas), costoProd=sum(lotes,x=>x.costoTotal);
   return {r,ped,ingresos,ventas:sum(ped,x=>x.total),porCobrar:sum(porCob,x=>x.total),nPorCobrar:porCob.length,compras,gastos,otros,costos,
-    ganancia:ingresos-costos,botProd,botVend:sum(ped,p=>sum(p.items||[],i=>i.cantidad)),costoBot:botProd?costoProd/botProd:0,
+    ganancia:ingresos-costos,envios,envEnvio,envEmb,envFlete,cobroEnvio:sum(ped,x=>x.cobroEnvio),nEnv:ped.filter(x=>envioCosto(x)>0).length,botProd,botVend:sum(ped,p=>sum(p.items||[],i=>i.cantidad)),costoBot:botProd?costoProd/botProd:0,
     ticket:ped.length?sum(ped,x=>x.total)/ped.length:0,nPed:ped.length,nLotes:lotes.length};
 }
 function lastMonths(n){const d=new Date(),o=[];for(let i=n-1;i>=0;i--){const x=new Date(d.getFullYear(),d.getMonth()-i,1);o.push(x.getFullYear()+'-'+pad(x.getMonth()+1))}return o}
@@ -560,7 +574,7 @@ function serieMeses(n){
   const keys=lastMonths(n);
   return {labels:keys.map(mlabel),
     ing:keys.map(k=>sum(DB.Pedidos.filter(p=>p.estado!=='Cancelado'&&p.pagado&&mk(p.fecha)===k),p=>p.total)),
-    cos:keys.map(k=>sum(DB.Compras.filter(x=>mk(x.fecha)===k),x=>x.costoTotal)+sum(DB.Gastos.filter(x=>mk(x.fecha)===k),x=>x.monto)+sum(DB.Produccion.filter(x=>mk(x.fecha)===k),x=>x.otrosCostos)),
+    cos:keys.map(k=>sum(DB.Compras.filter(x=>mk(x.fecha)===k),x=>x.costoTotal)+sum(DB.Gastos.filter(x=>mk(x.fecha)===k),x=>x.monto)+sum(DB.Produccion.filter(x=>mk(x.fecha)===k),x=>x.otrosCostos)+sum(DB.Pedidos.filter(p=>p.estado!=='Cancelado'&&mk(p.fecha)===k),envioCosto)),
     prod:keys.map(k=>sum(DB.Produccion.filter(x=>mk(x.fecha)===k),x=>x.botellas)),
     vend:keys.map(k=>sum(DB.Pedidos.filter(p=>p.estado!=='Cancelado'&&mk(p.fecha)===k),p=>sum(p.items||[],i=>i.cantidad)))};
 }
@@ -587,7 +601,7 @@ function waNum(n){let d=String(n||'').replace(/\D/g,''); if(d.length===9&&d[0]==
 const waLink=(n,msg)=>`https://wa.me/${n?waNum(n):''}${msg?'?text='+encodeURIComponent(msg):''}`;
 function pedidoMsg(p){
   const lines=(p.items||[]).map(it=>`• ${fmtNum(it.cantidad,0)} x ${prodName(byId('Productos',it.productoId))} = ${money(it.cantidad*it.precio)}`).join('\n');
-  return `Hola 👋, te escribimos de ${cfg.negocio} 🥃\n\nPedido del ${fmtDate(p.fecha)} (${cliLabel(p.clienteId)}):\n${lines}\n\n*Total: ${money(p.total)}*${p.direccionEntrega?`\n📍 Entrega: ${p.direccionEntrega}`:''}${p.pagado?'\n✅ Pago recibido, ¡gracias!':''}\n\n¡Saca el burro que tienes dentro! 🔥`;
+  return `Hola 👋, te escribimos de ${cfg.negocio} 🥃\n\nPedido del ${fmtDate(p.fecha)} (${cliLabel(p.clienteId)}):\n${lines}${p.cobroEnvio?`\n🚚 Envío: ${money(p.cobroEnvio)}`:''}\n\n*Total: ${money(p.total)}*${zonaTxt(p)?`\n📍 Destino: ${zonaTxt(p)}`:''}${p.direccionEntrega?` · ${p.direccionEntrega}`:''}${p.pagado?'\n✅ Pago recibido, ¡gracias!':''}\n\n¡Saca el burro que tienes dentro! 🔥`;
 }
 
 /* ---------- Componentes ---------- */
@@ -662,7 +676,7 @@ VIEWS.inicio=()=>{
   ${onboard}
   <div class="kpis">
     ${kpi('💰','Plata que entró',money(k.ingresos),'Ventas cobradas este mes','ok')}
-    ${kpi('💸','Plata que salió',money(k.costos),'Insumos + gastos del mes','bad')}
+    ${kpi('💸','Plata que salió',money(k.costos),'Insumos, gastos y envíos del mes','bad')}
     ${kpi(k.ganancia>=0?'📈':'📉','Ganancia del mes',money(k.ganancia),k.ganancia>=0?'¡Vas bien!':'Gastaste más de lo que cobraste',k.ganancia>=0?'ok':'bad')}
     ${kpi('⏳','Te deben',money(all.porCobrar),`${all.nPorCobrar} pedido(s) sin cobrar`,'warn')}
   </div>
@@ -717,7 +731,8 @@ function pedidoCard(p){
   const vivo=p.estado!=='Cancelado';
   return `<div class="item"><div class="item-top"><div><b data-act="verCliente" data-id="${p.clienteId}" style="cursor:pointer">${esc(cliLabel(p.clienteId))}</b><div class="muted sm">${fmtDate(p.fecha)} · ${items||'Sin productos'}</div></div><div class="amt">${money(p.total)}</div></div>
   <div class="badges">${badgeEstado(p.estado)}${vivo?(p.pagado?`<span class="badge ok">💵 Cobrado${p.metodoPago?' · '+esc(p.metodoPago):''}</span>`:'<span class="badge warn">⏳ Por cobrar</span>'):''}</div>
-  ${p.direccionEntrega?`<div class="muted sm ellipsis">📍 ${esc(p.direccionEntrega)}</div>`:''}
+  ${zonaTxt(p)||envioCosto(p)?`<div class="muted sm" style="display:flex;gap:10px;flex-wrap:wrap">${zonaTxt(p)?`<span>${p.zonaTipo==='Recojo'?'🏠':'📍'} ${esc(zonaTxt(p))}</span>`:''}${envioCosto(p)?`<span>🚚 Envío te costó <b>${money(envioCosto(p))}</b></span>`:''}${p.cobroEnvio?`<span>(cobrado ${money(p.cobroEnvio)})</span>`:''}</div>`:''}
+  ${p.direccionEntrega?`<div class="muted sm ellipsis">🏷️ ${esc(p.direccionEntrega)}</div>`:''}
   <div class="actions">
     ${p.estado==='Pendiente'?`<button type="button" class="btn sm ok" data-act="pedEntregado" data-id="${p.id}">✓ Entregado</button>`:''}
     ${vivo&&!p.pagado?`<button type="button" class="btn sm gold" data-act="pedCobrado" data-id="${p.id}">💵 Cobrado</button>`:''}
@@ -794,7 +809,7 @@ function vGastos(){
   const L=[...DB.Gastos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));
   const mes=sum(DB.Gastos.filter(x=>inP(x.fecha,periodRange('mes'))),x=>x.monto);
   const ic=Object.fromEntries(GASTO_CATS);
-  return `${tip('Los <b>gastos</b> son todo lo que pagas que no es un insumo: delivery, luz, publicidad, ayuda, permisos… También cuentan como plata que salió.')}
+  return `${tip('Los <b>gastos</b> son todo lo que pagas que no es un insumo: luz, publicidad, ayuda, permisos… El <b>envío, embalaje y flete de cada pedido</b> se anotan dentro del pedido.')}
   <div class="kpis" style="margin-bottom:12px">${kpi('💸','Gastos este mes',money(mes),'','bad')}${kpi('📋','Gastos registrados',L.length,'en total','')}</div>
   <button type="button" class="btn block" data-act="newGasto">+ Anotar gasto</button>
   ${L.length?`<div class="list">${L.map(g=>`<div class="item"><div class="item-top"><div class="cli-head"><div class="avatar" style="background:var(--bad-soft)">${ic[g.categoria]||'📦'}</div><div><b class="ellipsis" style="display:block">${esc(g.descripcion||g.categoria)}</b><div class="muted sm">${fmtDate(g.fecha)} · ${esc(g.categoria)}</div></div></div><div class="amt">${money(g.monto)}</div></div>
@@ -838,6 +853,7 @@ VIEWS.reportes=()=>{
   add('Insumos (compras)',k.compras);
   DB.Gastos.filter(x=>inP(x.fecha,r)).forEach(g=>add(g.categoria||'Otros',g.monto));
   add('Otros costos de producción',k.otros);
+  add('Envíos (delivery)',k.envEnvio); add('Embalajes',k.envEmb); add('Fletes',k.envFlete);
   const vp={}; k.ped.forEach(pd=>(pd.items||[]).forEach(it=>{const o=vp[it.productoId]||(vp[it.productoId]={n:0,t:0});o.n+=num(it.cantidad);o.t+=num(it.cantidad)*num(it.precio)}));
   const vpk=Object.keys(vp).sort((a,b)=>vp[b].t-vp[a].t);
   const st=statsClientes(r);
@@ -856,6 +872,8 @@ VIEWS.reportes=()=>{
     ${kpi('🛍️','Unidades vendidas',fmtNum(k.botVend,0),`${k.nPed} pedido(s)`,'info')}
     ${kpi('🍾','Costo por unidad',k.costoBot?money(k.costoBot):'—','promedio','')}
     ${kpi('🧾','Ticket promedio',k.ticket?money(k.ticket):'—','por pedido','')}
+    ${kpi('🚚','Envíos y embalaje',money(k.envios),`${k.nEnv} pedido(s) con envío`,'bad')}
+    ${kpi('↩️','Envío cobrado a clientes',money(k.cobroEnvio),k.envios?`cubre el ${Math.round(k.cobroEnvio/k.envios*100)}% del costo`:'','ok')}
   </div>
   <div class="grid2" style="margin-top:14px">
     <div class="card"><h3>💵 Entró vs. salió por mes</h3>${chart('chIV',barCfg(s.labels,[{label:'Entró',data:s.ing,backgroundColor:'#2e7d4f'},{label:'Salió',data:s.cos,backgroundColor:'#c0392b'}],true))}</div>
@@ -870,6 +888,14 @@ VIEWS.reportes=()=>{
     ${top.map((id,i)=>{const x=st[id],n=cliNum(id);return `<tr><td><span class="rank">${i+1}</span></td><td><b data-act="verCliente" data-id="${id}" style="cursor:pointer">N° ${n}</b>${isReg(n)?' ✅':''}</td><td class="r">${x.n}</td><td class="r">${fmtNum(x.bot,0)}</td><td class="r"><b>${money(x.total)}</b></td><td>${fmtDate(x.ultimo)}</td><td></td></tr>`}).join('')}
     </tbody></table></div>`:empty('⭐','Sin pedidos en este periodo','')}
   </div>
+  ${(()=>{const g={};k.ped.forEach(pd=>{const key=pd.zonaTipo==='Recojo'?'🏠 Recoge el cliente':pd.zona?`${pd.zonaTipo==='Provincia'?'🛣️':'🏙️'} ${pd.zona}`:'— Sin destino';const o=g[key]||(g[key]={n:0,e:0,m:0,f:0,c:0,t:pd.zonaTipo});o.n++;o.e+=num(pd.costoEnvio);o.m+=num(pd.costoEmbalaje);o.f+=num(pd.costoFlete);o.c+=num(pd.cobroEnvio)});
+    const ks=Object.keys(g).sort((a,b)=>(g[b].e+g[b].m+g[b].f)-(g[a].e+g[a].m+g[a].f)); if(!ks.length) return '';
+    const tl=t=>sum(Object.values(g).filter(o=>o.t===t),o=>o.e+o.m+o.f);
+    return `<div class="card"><h3>🚚 Envíos por destino</h3><p class="muted sm" style="margin:0 0 8px">Cuánto te cuesta llevar los pedidos a cada distrito o provincia.</p>
+    <div class="minis" style="margin:0 0 10px"><div><small>🏙️ Lima</small><b>${money(tl('Lima'))}</b></div><div><small>🛣️ Provincia</small><b>${money(tl('Provincia'))}</b></div><div><small>Cobrado a clientes</small><b class="t-ok">${money(k.cobroEnvio)}</b></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Destino</th><th class="r">Pedidos</th><th class="r">Envío</th><th class="r">Embalaje</th><th class="r">Flete</th><th class="r">Total</th><th class="r">Prom./pedido</th><th class="r">Cobrado</th></tr></thead><tbody>
+    ${ks.map(key=>{const o=g[key],t=o.e+o.m+o.f;return `<tr><td><b>${esc(key)}</b></td><td class="r">${o.n}</td><td class="r">${money(o.e)}</td><td class="r">${money(o.m)}</td><td class="r">${money(o.f)}</td><td class="r"><b>${money(t)}</b></td><td class="r">${money(t/o.n)}</td><td class="r t-ok">${money(o.c)}</td></tr>`}).join('')}
+    </tbody></table></div></div>`})()}
   <div class="card"><h3>🏭 Costo de producción por producto</h3>
     ${Object.keys(pp).length?`<div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Producido</th><th class="r">Costo total</th><th class="r">Costo c/u</th><th class="r">Precio</th><th class="r">Ganas c/u</th></tr></thead><tbody>
     ${Object.keys(pp).map(id=>{const pr=byId('Productos',id),o=pp[id],cu=o.b?o.c/o.b:0;return `<tr><td><b>${esc(prodName(pr))}</b></td><td class="r">${fmtNum(o.b,0)}</td><td class="r">${money(o.c)}</td><td class="r">${money(cu)}</td><td class="r">${pr?money(pr.precio):'—'}</td><td class="r ${pr&&pr.precio-cu>=0?'t-ok':'t-bad'}"><b>${pr?money(pr.precio-cu):'—'}</b></td></tr>`}).join('')}
@@ -1017,16 +1043,35 @@ function formPedido(p={},preCli){
   if(!DB.Productos.length) return needFirst('Primero crea al menos un producto para poder venderlo.','newProducto','Crear producto');
   const items=(p.items&&p.items.length)?p.items:[{}];
   const cliOpts=[['','— Elige el N° de cliente —']];for(let n=1;n<=maxCli();n++) cliOpts.push([cliId(n),`N° ${n}${isReg(n)?'  ✓':''}`]);
+  const preC=byId('Clientes',p.clienteId||preCli)||{};
+  const zt0=p.id?(p.zonaTipo||'Lima'):(preC.zonaTipo||'Lima'), z0=p.id?p.zona:(preC.zona||'');
+  const envVals=f=>({e:num(f.elements.costoEnvio.value),m:num(f.elements.costoEmbalaje.value),fl:num(f.elements.costoFlete.value)});
   const upd=(e,f)=>{
-    const t=e&&e.target;
+    const t=e&&e.target, el=f.elements;
     if(t&&t.dataset.role==='price') t.dataset.manual=1;
     if(t&&(t.dataset.role==='prod'||t.dataset.role==='qty')){const row=t.closest('.line'),pi=$('[data-role=price]',row),pr=byId('Productos',$('[data-role=prod]',row).value);
       if(t.dataset.role==='prod') delete pi.dataset.manual;
       if(pr&&!pi.dataset.manual) pi.value=precioPara(pr,num($('[data-role=qty]',row).value));}
-    const cn=cliNum(f.elements.clienteId.value); $('#regWrap').hidden=!cn||isReg(cn); $('#regN').textContent=cn||'';
-    const its=readPed(f), tot=sum(its,i=>i.cantidad*i.precio);
+    const cn=cliNum(el.clienteId.value); $('#regWrap').hidden=!cn||isReg(cn); $('#regN').textContent=cn||'';
+    // destino: al elegir cliente, traer su distrito/provincia
+    if(t&&t.name==='clienteId'&&!p.id){const c=byId('Clientes',el.clienteId.value);if(c&&c.zona&&!el.zona.value){el.zonaTipo.value=c.zonaTipo||'Lima';el.zona.value=c.zona}}
+    const zt=el.zonaTipo.value, recojo=zt==='Recojo';
+    $('#envBox').hidden=recojo; $('#zonaWrap').style.visibility=recojo?'hidden':'visible';
+    $('#dlZona').innerHTML=[...new Set([...zonasUsadas(zt),...(zt==='Provincia'?PROVINCIAS:LIMA_DISTRITOS)])].map(z=>`<option value="${esc(z)}">`).join('');
+    $('#lblZona').textContent=zt==='Provincia'?'Provincia / ciudad':'Distrito';
+    const ult=recojo?null:ultimoEnvio(zt,el.zona.value,p.id), v=envVals(f);
+    if(ult&&t&&(t.name==='zona'||t.name==='clienteId'||t.name==='zonaTipo')&&!v.e&&!v.m&&!v.fl){el.costoEnvio.value=ult.costoEnvio||'';el.costoEmbalaje.value=ult.costoEmbalaje||'';el.costoFlete.value=ult.costoFlete||'';f.dataset.autoEnv=1}
+    $('#envHint').innerHTML=ult?`<span>💡 Último envío a <b>${esc(ult.zona)}</b>: ${money(envioCosto(ult))}${f.dataset.autoEnv?' (ya cargado)':''}</span>${f.dataset.autoEnv?'':`<button type="button" class="btn sm gold" data-act="usarUltEnvio">Usar</button>`}`:'';
+    $('#envHint').hidden=!ult;
+    const its=readPed(f), sub=sum(its,i=>i.cantidad*i.precio), V=envVals(f), ce=recojo?0:V.e+V.m+V.fl, cobro=recojo?0:num(el.cobroEnvio.value), tot=sub+cobro;
     const falta=its.filter(i=>i.cantidad>stockProd(i.productoId,p.id)).map(i=>`${esc(prodName(byId('Productos',i.productoId)))} (hay ${fmtNum(stockProd(i.productoId,p.id),0)})`);
-    $('#pCalc').innerHTML=`<div class="calc-row big"><span>Total del pedido</span><b>${money(tot)}</b></div><div class="calc-row muted"><span>Unidades</span><span>${fmtNum(sum(its,i=>i.cantidad),0)}</span></div>${its.some(i=>{const pr=byId('Productos',i.productoId);return pr&&pr.precioMayor>0&&i.precio===pr.precioMayor&&i.cantidad>=pr.minMayor})?'<div class="calc-row" style="color:var(--ok)"><span>💰 Se aplicó precio por mayor</span></div>':''}${falta.length?`<div class="warnbox">⚠️ No alcanza el stock: ${falta.join(', ')}. Puedes guardarlo igual y producir después.</div>`:''}`;
+    const mayor=its.some(i=>{const pr=byId('Productos',i.productoId);return pr&&pr.precioMayor>0&&i.precio===pr.precioMayor&&i.cantidad>=pr.minMayor});
+    $('#pCalc').innerHTML=`<div class="calc-row"><span>Productos (${fmtNum(sum(its,i=>i.cantidad),0)} u.)</span><b>${money(sub)}</b></div>
+      ${cobro?`<div class="calc-row"><span>+ Envío cobrado al cliente</span><b>${money(cobro)}</b></div>`:''}
+      <div class="calc-row total big"><span>Total que paga el cliente</span><b>${money(tot)}</b></div>
+      ${mayor?'<div class="calc-row" style="color:var(--ok)"><span>💰 Se aplicó precio por mayor</span></div>':''}
+      ${ce?`<div class="calc-row" style="color:var(--bad)"><span>🚚 Tu costo de envío</span><b>− ${money(ce)}</b></div><div class="calc-row"><span>Te queda después del envío</span><b>${money(tot-ce)}</b></div>`:''}
+      ${falta.length?`<div class="warnbox">⚠️ No alcanza el stock: ${falta.join(', ')}. Puedes guardarlo igual y producir después.</div>`:''}`;
   };
   openSheet(p.id?'Editar pedido':'🧾 Nuevo pedido',`
     <div class="row2 stack">${field('Fecha',inp('fecha',p.fecha||today(),'type="date" required'))}${field('Cliente N° *',sel('clienteId',cliOpts,p.clienteId||preCli||'','required'))}</div>
@@ -1034,19 +1079,33 @@ function formPedido(p={},preCli){
     <div class="lines-head"><b>¿Qué pidió?</b></div>
     <div class="lines-cols"><span>Producto</span><span>Cant.</span><span>Precio c/u</span><span></span></div>
     <div class="lines" id="lines">${items.map(pedLine).join('')}</div>
-    <button type="button" class="btn sm ghost" data-act="addPed" style="margin-bottom:6px">+ Agregar otro producto</button>
+    <button type="button" class="btn sm ghost" data-act="addPed" style="margin-bottom:10px">+ Agregar otro producto</button>
+    <div class="subcard"><b>🚚 Envío y entrega</b>
+      <div class="row2">${field('Destino',sel('zonaTipo',ZONA_TIPOS,zt0))}<label class="field" id="zonaWrap"><span id="lblZona">Distrito</span>${inp('zona',z0,'list="dlZona" placeholder="Escribe o elige…" autocomplete="off"')}</label></div>
+      <datalist id="dlZona"></datalist>
+      <div id="envBox">
+        <div class="envhint" id="envHint" hidden></div>
+        <div class="row3">${field(`Envío (${cfg.moneda})`,inp('costoEnvio',p.costoEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}${field(`Embalaje (${cfg.moneda})`,inp('costoEmbalaje',p.costoEmbalaje||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}${field(`Flete (${cfg.moneda})`,inp('costoFlete',p.costoFlete||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}</div>
+        <small class="muted" style="display:block;margin:-6px 0 10px">Lo que <b>tú pagas</b>: delivery/courier, cajas, burbupack, flete a provincia…</small>
+        ${field(`¿Le cobras el envío al cliente? (${cfg.moneda})`,inp('cobroEnvio',p.cobroEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00 si es gratis"'),'Se suma al total del pedido.')}
+      </div>
+      ${field('Referencia de entrega (opcional)',inp('direccionEntrega',p.direccionEntrega,'placeholder="Ej: agencia Shalom, mercado, puesto 12…"'))}
+    </div>
     <div class="calc" id="pCalc"></div>
-    ${field('Lugar de entrega (opcional)',inp('direccionEntrega',p.direccionEntrega,'placeholder="Ej: tienda, mercado, distrito…"'))}
     <div class="row2">${field('Entrega',sel('estado',[['Pendiente','🕒 Por entregar'],['Entregado','✅ Entregado'],['Cancelado','❌ Cancelado']],p.estado||'Pendiente'))}${field('Forma de pago',sel('metodoPago',[['','—'],...METODOS],p.metodoPago))}</div>
     <label class="check"><input type="checkbox" name="pagado" ${p.pagado?'checked':''}><span>💵 Ya me pagó</span></label>
     ${field('Nota',inp('nota',p.nota,'placeholder="Ej: entregar después de las 6 pm"'))}`,
-  {onOpen:f=>upd(null,f),onInput:upd,
+  {onOpen:f=>{delete f.dataset.autoEnv;upd(null,f)},onInput:(e,f)=>{if(e&&e.target&&/^costo/.test(e.target.name||''))delete f.dataset.autoEnv;upd(e,f)},
    onSubmit:(d,f)=>{
      const its=readPed(f); if(!its.length){toast('Agrega al menos un producto','bad');return false}
      const cid=d.clienteId, cn=cliNum(cid);
      if(!cn){toast('Elige el número del cliente','bad');return false}
      if(!isReg(cn)&&f.elements.marcarReg.checked) setRegistrado(cn,true);
-     saveRow('Pedidos',{id:p.id||uid(),fecha:d.fecha,clienteId:cid,items:its,total:+sum(its,i=>i.cantidad*i.precio).toFixed(2),estado:d.estado,pagado:f.elements.pagado.checked,metodoPago:d.metodoPago,direccionEntrega:d.direccionEntrega,nota:d.nota});
+     const recojo=d.zonaTipo==='Recojo', zona=recojo?'':(d.zona||'').trim();
+     const sub=+sum(its,i=>i.cantidad*i.precio).toFixed(2), cobro=recojo?0:num(d.cobroEnvio);
+     saveRow('Pedidos',{id:p.id||uid(),fecha:d.fecha,clienteId:cid,items:its,subtotal:sub,total:+(sub+cobro).toFixed(2),estado:d.estado,pagado:f.elements.pagado.checked,metodoPago:d.metodoPago,
+       zonaTipo:d.zonaTipo,zona,costoEnvio:recojo?0:num(d.costoEnvio),costoEmbalaje:recojo?0:num(d.costoEmbalaje),costoFlete:recojo?0:num(d.costoFlete),cobroEnvio:cobro,direccionEntrega:d.direccionEntrega,nota:d.nota});
+     if(zona) setZonaCliente(cn,d.zonaTipo,zona);
      toast(p.id?'Pedido actualizado ✅':'Pedido anotado 🧾');render()},
    onDelete:p.id?()=>confirmDel('Pedidos',p.id,'este pedido'):null});
 }
@@ -1067,6 +1126,11 @@ function verCliente(id){
   const favId=Object.keys(fav).sort((a,b)=>fav[b]-fav[a])[0];
   openSheet(`Cliente N° ${n}`,`
     <label class="regbig ${reg?'on':''}"><span class="cbox"><input type="checkbox" data-reg="${n}" ${reg?'checked':''}><span></span></span><span>Registrado en mi cuaderno${act.length>=3?' <span class="badge gold">⭐ Frecuente</span>':''}</span></label>
+    <div class="subcard" style="padding-bottom:4px"><b>📍 Destino habitual</b>
+      <div class="row2">${field('Lima / Provincia',sel('zonaTipo',ZONA_TIPOS.slice(0,2),(byId('Clientes',id)||{}).zonaTipo||'Lima'))}${field('Distrito / provincia',inp('zona',(byId('Clientes',id)||{}).zona||'','list="dlZonaC" placeholder="Ej: Chorrillos" autocomplete="off"'))}</div>
+      <datalist id="dlZonaC">${[...LIMA_DISTRITOS,...PROVINCIAS].map(z=>`<option value="${esc(z)}">`).join('')}</datalist>
+      <button type="button" class="btn sm ghost block" data-act="guardarZona" data-n="${n}" style="margin:-4px 0 10px">Guardar destino</button>
+      <small class="muted" style="display:block;margin:-4px 0 8px">Se completa solo en sus próximos pedidos.</small></div>
     <div class="minis" style="margin:0 0 12px"><div><small>Pedidos</small><b>${act.length}</b></div><div><small>Compró</small><b>${money(sum(act,p=>p.total))}</b></div><div><small>Le falta pagar</small><b class="${deuda?'t-bad':''}">${money(deuda)}</b></div></div>
     ${favId?`<div class="tip"><span>❤️</span><p>Su favorito: <b>${esc(prodName(byId('Productos',favId)))}</b> (${fmtNum(fav[favId],0)} ${esc(uLbl(favId,fav[favId]))})</p></div>`:''}
     <button type="button" class="btn block" data-act="newPedido" data-cli="${id}">🧾 Nuevo pedido para el N° ${n}</button>
@@ -1107,7 +1171,7 @@ function ayuda(){
     <h4>🔁 El ciclo del negocio</h4>
     <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y sube tu stock.</li><li><b>Vendes en un pedido</b> 🧾 → baja el stock.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
     <h4>📖 Palabras clave</h4>
-    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
+    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
     <h4>📲 Tenla como app en tu celular</h4>
     <p>Toca <b>Instalar</b> (en Inicio o en ⚙️ Ajustes) y tendrás el ícono del burro en tu pantalla de inicio. Cuando haya mejoras, se actualiza sola: <b>no hace falta volver a instalar</b>.</p>
     <h4>🟢 El punto de arriba</h4>
@@ -1124,11 +1188,12 @@ function csv(name,rows){
 const dec=n=>String(+(+n).toFixed(2)).replace('.',',');
 const CSVS={
   clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° cliente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Unidades:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
-  pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Cliente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Total:dec(p.total),Estado:p.estado,Cobrado:p.pagado?'Sí':'No','Forma de pago':p.metodoPago,'Dirección':p.direccionEntrega})),
+  pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Cliente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Subtotal:dec(p.subtotal||p.total-num(p.cobroEnvio)),'Envío cobrado':dec(p.cobroEnvio),Total:dec(p.total),'Tipo destino':p.zonaTipo,Destino:p.zona,'Costo envío':dec(p.costoEnvio),'Costo embalaje':dec(p.costoEmbalaje),'Costo flete':dec(p.costoFlete),Estado:p.estado,Cobrado:p.pagado?'Sí':'No','Forma de pago':p.metodoPago,Referencia:p.direccionEntrega})),
   produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Tipo:(byId('Productos',l.productoId)||{}).tipo||'',Cantidad:l.botellas,Unidad:(byId('Productos',l.productoId)||{}).unidad||'','Costo insumos':dec(l.costoInsumos),'Otros costos':dec(l.otrosCostos),'Costo total':dec(l.costoTotal),'Costo por unidad':dec(l.botellas?l.costoTotal/l.botellas:0),Nota:l.nota})),
   costos:()=>[...DB.Compras.map(c=>{const i=byId('Insumos',c.insumoId);return {Fecha:c.fecha,Tipo:'Compra de insumo',Detalle:`${c.cantidad} ${i?i.unidad:''} ${i?i.nombre:''}`.trim(),Monto:dec(c.costoTotal)}}),
     ...DB.Gastos.map(g=>({Fecha:g.fecha,Tipo:g.categoria,Detalle:g.descripcion,Monto:dec(g.monto)})),
-    ...DB.Produccion.filter(l=>l.otrosCostos).map(l=>({Fecha:l.fecha,Tipo:'Otros costos de producción',Detalle:prodName(byId('Productos',l.productoId)),Monto:dec(l.otrosCostos)}))].sort((a,b)=>a.Fecha.localeCompare(b.Fecha)),
+    ...DB.Produccion.filter(l=>l.otrosCostos).map(l=>({Fecha:l.fecha,Tipo:'Otros costos de producción',Detalle:prodName(byId('Productos',l.productoId)),Monto:dec(l.otrosCostos)})),
+    ...DB.Pedidos.filter(p=>p.estado!=='Cancelado').flatMap(p=>[['Envío','costoEnvio'],['Embalaje','costoEmbalaje'],['Flete','costoFlete']].filter(([,k])=>num(p[k])>0).map(([t,k])=>({Fecha:p.fecha,Tipo:t,Detalle:`${cliShort(p.clienteId)} → ${zonaTxt(p)||'sin destino'}`,Monto:dec(p[k])})))].sort((a,b)=>a.Fecha.localeCompare(b.Fecha)),
 };
 
 /* ===================== ACCIONES ===================== */
@@ -1156,6 +1221,8 @@ const ACT={
   newPedido:d=>formPedido({},d.cli), editPedido:d=>formPedido(byId('Pedidos',d.id)),
   newGasto:()=>formGasto(), editGasto:d=>formGasto(byId('Gastos',d.id)),
   verCliente:d=>verCliente(d.id),
+  guardarZona:d=>{const f=$('#shForm'),z=f.elements.zona.value.trim();setZonaCliente(+d.n,f.elements.zonaTipo.value,z);toast(z?`📍 N° ${d.n}: ${z}`:'Destino borrado');render()},
+  usarUltEnvio:()=>{const f=$('#shForm'),u=ultimoEnvio(f.elements.zonaTipo.value,f.elements.zona.value);if(!u)return;f.elements.costoEnvio.value=u.costoEnvio||'';f.elements.costoEmbalaje.value=u.costoEmbalaje||'';f.elements.costoFlete.value=u.costoFlete||'';f.dataset.autoEnv=1;SH.onInput(null,f)},
   pedEntregado:d=>{const p=byId('Pedidos',d.id);saveRow('Pedidos',Object.assign({},p,{estado:'Entregado'}));toast('Pedido entregado 🚚');if(SH)verCliente(p.clienteId);render()},
   pedCobrado:d=>formCobrado(byId('Pedidos',d.id)),
   addPed:()=>{$('#lines').insertAdjacentHTML('beforeend',pedLine());SH.onInput(null,$('#shForm'))},
@@ -1241,21 +1308,24 @@ function demoData(){
       const ci=sum(cons,c=>c.cantidad*c.costoUnit), ot=ri(25,45);
       d.Produccion.push({id:`l${mb}${k}`,fecha:dia(mb,ri(5,9)),productoId:pid,botellas:b,consumos:cons,costoInsumos:+ci.toFixed(2),otrosCostos:ot,costoTotal:+(ci+ot).toFixed(2),nota:pid==='p2'?'Macerado 15 días':''});
     });
-    [['Mano de obra',ri(250,320),'Ayudante de embotellado'],['Delivery / transporte',ri(60,110),'Motorizado del mes'],['Servicios (luz, agua, gas)',ri(35,55),'Gas y luz'],['Publicidad',ri(30,60),'Anuncio en Instagram']]
-      .filter((g,k)=>mb>0||k===1||k===2).forEach(([cat,m,desc],k)=>d.Gastos.push({id:`g${mb}${k}`,fecha:dia(mb,ri(10,26)),categoria:cat,descripcion:desc,monto:m}));
+    [['Mano de obra',ri(250,320),'Ayudante de embotellado'],['Servicios (luz, agua, gas)',ri(35,55),'Gas y luz'],['Publicidad',ri(30,60),'Anuncio en Instagram']]
+      .filter((g,k)=>mb>0||k===1).forEach(([cat,m,desc],k)=>d.Gastos.push({id:`g${mb}${k}`,fecha:dia(mb,ri(10,26)),categoria:cat,descripcion:desc,monto:m}));
   }
   const REG=[1,2,3,4,5,6,7,8,9,10,11,12,14,15,16,18,19,21,22,23,25,27,28,30,31,33,34,36,38,40,41,45];
-  d.Clientes=REG.map(k=>({id:'n'+k,numero:k,registrado:true,nota:'',creado:dia(5,1+(k%25))}));
+  const ZL=['Chorrillos','Surquillo','San Juan de Miraflores','Barranco','Santiago de Surco','Villa El Salvador','Miraflores','San Borja','Los Olivos','Lima Cercado'], ZP=['Arequipa','Trujillo','Huancayo','Cusco','Ica'];
+  d.Clientes=REG.map((k,x)=>{const prov=x%6===5;return {id:'n'+k,numero:k,registrado:true,zonaTipo:prov?'Provincia':'Lima',zona:prov?ZP[x%ZP.length]:ZL[x%ZL.length],nota:'',creado:dia(5,1+(k%25))}});
   const peso=['n3','n3','n3','n7','n7','n7','n7','n12','n12','n12','n15','n15','n21','n25','n28','n30','n33','n36','n40','n45'];
   let n=0;
   for(let mb=5;mb>=0;mb--){
-    const np=mb===0?ri(6,7):ri(9,12);
+    const np=mb===0?ri(9,10):ri(9,12);
     for(let j=0;j<np;j++){
       const cid=pick(peso), its=[], used={};
       for(let x=0;x<ri(1,2);x++){const pid=pick(['p1','p1','p1','p2','p2','p3','p4','p4']);if(used[pid])continue;used[pid]=1;const pr=d.Productos.find(p=>p.id===pid);
         const q=cid==='n7'||cid==='n12'||mb===0?ri(4,8):ri(1,3);its.push({productoId:pid,cantidad:q,precio:precioPara(pr,q)})}
       const f=dia(mb,ri(10,28)), reciente=mb===0&&j>=np-3;
-      d.Pedidos.push({id:'pd'+(n++),fecha:f,clienteId:cid,items:its,total:sum(its,i=>i.cantidad*i.precio),estado:reciente&&j===np-1?'Pendiente':(rnd()<.03?'Cancelado':'Entregado'),pagado:!(reciente&&j>=np-2),metodoPago:reciente&&j>=np-2?'':pick(['Yape','Yape','Plin','Efectivo','Transferencia']),direccionEntrega:'',nota:''});
+      const cl=d.Clientes.find(c=>c.id===cid)||{}, recoge=rnd()<.15, prov=cl.zonaTipo==='Provincia';
+      const env=recoge?{zt:'Recojo',z:'',e:0,m:0,f:0,cobro:0,ref:''}:prov?{zt:'Provincia',z:cl.zona,e:ri(5,8),m:ri(4,7),f:ri(18,30),cobro:ri(15,25),ref:'Agencia Shalom'}:{zt:'Lima',z:cl.zona,e:ri(8,15),m:ri(1,3),f:0,cobro:rnd()<.4?10:0,ref:''};
+      d.Pedidos.push({id:'pd'+(n++),fecha:f,clienteId:cid,items:its,subtotal:sum(its,i=>i.cantidad*i.precio),total:sum(its,i=>i.cantidad*i.precio)+env.cobro,estado:reciente&&j===np-1?'Pendiente':(rnd()<.03?'Cancelado':'Entregado'),pagado:!(reciente&&j>=np-2),metodoPago:reciente&&j>=np-2?'':pick(['Yape','Yape','Plin','Efectivo','Transferencia']),zonaTipo:env.zt,zona:env.z,costoEnvio:env.e,costoEmbalaje:env.m,costoFlete:env.f,cobroEnvio:env.cobro,direccionEntrega:env.ref,nota:''});
     }
   }
   return serializeAll(d);

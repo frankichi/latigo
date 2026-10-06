@@ -116,6 +116,11 @@ El usuario normal no ve estas opciones.
 3. **Producción → Compras:** cada compra suma al almacén y fija el precio promedio.
 4. **Producción → Lotes:** cada producción descuenta insumos, suma botellas y calcula el **costo por botella**.
 5. **Ventas → Pedidos:** cliente (nuevo o existente), productos y dirección. Botones *✓ Entregado*, *💵 Cobrado* y *WhatsApp* con el pedido ya escrito.
+5b. **Envíos en cada pedido (🚚):**
+   - Elige el destino: **Lima (distrito)**, **Provincia** o **Recoge el cliente**.
+   - Anota lo que tú pagas de **envío, embalaje y flete**, y si quieres, lo que **le cobras al cliente** por el envío (se suma al total).
+   - Cada número de cliente recuerda su distrito o provincia, y la app sugiere el costo del último envío a ese destino.
+   - En **Reportes → Envíos por destino** ves cuánto cuesta enviar a cada distrito o provincia.
 6. **Producción → Gastos:** delivery, luz, publicidad, mano de obra…
 7. **Clientes:** son **números del 1 al 100**, como en el cuaderno del dueño (no se guardan nombres ni teléfonos). Cada número tiene un recuadro ✅ *Registrado* que se activa o desactiva con un toque. Al tocar el número se ve su historial, cuánto compró, cuánto debe y su producto favorito. La cantidad de números se cambia en ⚙️ Ajustes.
 8. **Reportes:** gráficos, ranking de clientes asiduos y descargas para Excel.
