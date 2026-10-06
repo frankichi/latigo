@@ -14,6 +14,7 @@ el-latigo/
 ├── index.html                 ← la app completa
 ├── manifest.webmanifest       ← permite instalarla en el celular
 ├── vercel.json                ← configuración de Vercel
+├── sw.js                      ← permite instalarla y que se actualice sola
 ├── img/                       ← logo, íconos y etiqueta
 ├── apps-script/
 │   ├── Code.gs                ← backend: conecta la app con Látigo_BD
@@ -78,11 +79,20 @@ El usuario normal no ve estas opciones.
 
 > ✅ **Comprobar el backend:** abre tu URL `/exec?action=ping` en el navegador. Si dice `"Clave incorrecta"`, está **todo bien** (responde, pero no sin clave). Si dice `"Falta ejecutar setup"`, ejecuta `setup`.
 
-📱 **Instalar como app:**
-- **Android (Chrome):** menú ⋮ → *Agregar a pantalla principal*.
-- **iPhone (Safari):** Compartir → *Agregar a inicio*.
+📲 **Instalar en el celular:** la app muestra el botón **Instalar** en Inicio y en ⚙️ Ajustes.
+- **Android:** un toque y queda el ícono del burro en la pantalla de inicio.
+- **iPhone:** muestra los 3 pasos de Safari (Compartir → Agregar a inicio).
 
-Queda con el ícono del burro en llamas.
+**Sin íconos duplicados:**
+- El botón no aparece dentro de la app instalada.
+- En Android el navegador no la vuelve a ofrecer si ya está instalada.
+- En iPhone se oculta al tocar "Ya lo agregué".
+
+**Versiones nuevas:**
+- Cuando subas mejoras a GitHub, el mismo ícono abre la versión nueva sola. Nadie reinstala nada.
+- Sin internet, la app abre igual con la última versión guardada.
+
+⚠️ **No cambies el dominio** de Vercel una vez instalada. Un dominio nuevo cuenta como otra app y habría que instalarla de nuevo. Si quieres un dominio propio (ej. `app.ellatigo.pe`), ponlo **antes** de compartir el link.
 
 ---
 

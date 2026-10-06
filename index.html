@@ -268,6 +268,15 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 #confirm{align-items:center}
 
 /* toast */
+.install{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--gold);border-radius:var(--r);padding:12px;margin-bottom:14px;box-shadow:var(--shadow)}
+.install img{width:52px;height:52px;border-radius:12px;flex:none}
+.install>div{flex:1;min-width:0}
+.install b{display:block;font-weight:900}
+.install p{margin:2px 0 0;font-size:.84rem;color:var(--muted);line-height:1.3}
+.install .x{width:30px;height:30px;font-size:.85rem;color:var(--muted);align-self:flex-start}
+.steps-ios{counter-reset:s;list-style:none;padding:0;margin:8px 0 14px;display:grid;gap:10px}
+.steps-ios li{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 12px;font-weight:700}
+.steps-ios li::before{counter-increment:s;content:counter(s);width:28px;height:28px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--night-2);color:var(--gold);font-weight:900}
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 92px + env(safe-area-inset-bottom));transform:translate(-50%,20px);z-index:90;background:#2a1a14;color:#fff;padding:11px 16px;border-radius:14px;font-weight:700;font-size:.9rem;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.25s;max-width:calc(100% - 32px);text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast.bad{background:var(--bad)} .toast.warn{background:#8a5300}
@@ -336,6 +345,10 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
+const APP_VERSION = '1.2.0';
+let installEvt=null;
+const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
 
 /* ---------- Estructura de datos (igual que las hojas de Google Sheets) ---------- */
 const SCHEMA = {
@@ -610,7 +623,7 @@ VIEWS.inicio=()=>{
   const ult=[...DB.Pedidos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id)).slice(0,3);
   const hero=done<steps.length?`<div class="hero"><img src="img/logo-emblema.jpg" alt=""><h2>¡Bienvenido!</h2><p>Aquí controlas producción, insumos, costos, clientes y ventas.</p><div class="slogan">Saca el burro que tienes dentro</div></div>`:'';
   return `
-  ${hero}<section class="hello"><h2>${saludo} 👋</h2><p>Así va ${esc(cfg.negocio)} en ${MESES_L[now.getMonth()]}.</p></section>
+  ${installBanner()}${hero}<section class="hello"><h2>${saludo} 👋</h2><p>Así va ${esc(cfg.negocio)} en ${MESES_L[now.getMonth()]}.</p></section>
   ${onboard}
   <div class="kpis">
     ${kpi('💰','Plata que entró',money(k.ingresos),'Ventas cobradas este mes','ok')}
@@ -1016,8 +1029,10 @@ function formAjustes(){
   const estado=st.includes('ok')?'🟢 Todo guardado en la base de datos <b>Látigo_BD</b>.':st.includes('busy')?'🟡 Guardando…':`🔴 Sin conexión.${pend?` Hay <b>${pend}</b> cambio(s) esperando subir; se suben solos cuando vuelva el internet.`:''}`;
   openSheet('⚙️ Ajustes',`
     <div class="calc" style="margin-top:0">${estado}</div>
+    ${esApp()?'<div class="calc">📲 Estás usando la <b>app instalada</b>.</div>':`<button type="button" class="btn gold block" data-act="install">📲 Instalar en este celular</button>`}
     <div class="row2">${field('Nombre del negocio',inp('negocio',cfg.negocio))}${field('Moneda',inp('moneda',cfg.moneda,'placeholder="S/"'))}</div>
     <div class="btn-row"><button type="button" class="btn sm ghost" data-act="syncNow">🔄 Actualizar datos</button><button type="button" class="btn sm ghost" data-act="backup">⬇️ Descargar copia</button></div>
+    <p class="muted sm" style="text-align:center;margin:4px 0 0">Versión ${APP_VERSION}</p>
     ${ADMIN?`<h4 style="margin:16px 0 6px;font-weight:900">🛠️ Administrador</h4>
     ${tip('Estas opciones afectan la base de datos de todos. Úsalas con cuidado.')}
     <div class="muted sm" style="margin-bottom:8px;word-break:break-all">Conectado a: <code>${esc(cfg.apiUrl)}</code></div>
@@ -1035,8 +1050,8 @@ function ayuda(){
     <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y suben las botellas.</li><li><b>Vendes en un pedido</b> 🧾 → bajan las botellas.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
     <h4>📖 Palabras clave</h4>
     <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por botella:</b> lo que te costó el lote ÷ botellas que salieron.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
-    <h4>📱 Instálala como app</h4>
-    <ul><li><b>Android (Chrome):</b> menú ⋮ → “Agregar a pantalla principal”.</li><li><b>iPhone (Safari):</b> botón compartir → “Agregar a inicio”.</li></ul>
+    <h4>📲 Tenla como app en tu celular</h4>
+    <p>Toca <b>Instalar</b> (en Inicio o en ⚙️ Ajustes) y tendrás el ícono del burro en tu pantalla de inicio. Cuando haya mejoras, se actualiza sola: <b>no hace falta volver a instalar</b>.</p>
     <h4>🟢 El punto de arriba</h4>
     <p><b>Verde:</b> conectado a Google Sheets · <b>Amarillo:</b> guardando · <b>Rojo:</b> sin conexión (lo que anotes se sube después) · <b>Gris:</b> solo en este celular. Toca el punto para actualizar.</p>
     <h4>✨ Truco</h4>
@@ -1181,6 +1196,51 @@ setTimeout(()=>$('#splash').classList.add('out'),900);
 setSync(cfg.apiUrl?'busy':'local');
 if(cfg.apiUrl) syncAll(false);
 window.addEventListener('online',()=>cfg.apiUrl&&syncAll(false));
+
+/* ===================== INSTALAR EN EL CELULAR =====================
+   - Android/Chrome: usa el instalador del navegador. El navegador NO lo ofrece
+     si la app ya está instalada, así no se duplica el ícono.
+   - Dentro de la app instalada nunca se muestra el botón.
+   - iPhone: Apple no deja instalar con un botón; se muestran los pasos.
+   - Las versiones nuevas se actualizan solas en el mismo ícono (manifest id fijo).
+   ================================================================== */
+function puedeInstalar(){
+  if(esApp()||load('latigo_instalada',0)) return false;
+  return !!installEvt||(IS_IOS&&!load('latigo_ios_agregada',0));
+}
+function installBanner(){
+  if(!puedeInstalar()) return '';
+  const pospuesto=load('latigo_install_luego',0); if(pospuesto&&Date.now()-pospuesto<3*864e5) return '';
+  return `<div class="install"><img src="img/icon-192.png" alt=""><div><b>Instala El Látigo en tu celular</b><p>Ábrela con un toque desde tu pantalla de inicio, como una app.</p></div>
+    <button type="button" class="btn sm gold" data-act="install">Instalar</button><button type="button" class="icon-btn x" data-act="installLuego" aria-label="Ahora no">✕</button></div>`;
+}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;store('latigo_instalada',0);/* el navegador solo avisa esto si NO está instalada */if(route.tab==='inicio')render()});
+window.addEventListener('appinstalled',()=>{installEvt=null;store('latigo_instalada',1);toast('¡Listo! Busca el ícono de El Látigo en tu pantalla de inicio 🔥');render()});
+Object.assign(ACT,{
+  install:async()=>{
+    if(esApp()){toast('Ya estás usando la app instalada ✅');return}
+    if(installEvt){
+      closeSheet(); installEvt.prompt();
+      const r=await installEvt.userChoice.catch(()=>({outcome:'dismissed'})); installEvt=null;
+      if(r.outcome==='accepted'){store('latigo_instalada',1);toast('Instalando… búscala en tu pantalla de inicio 🔥')}
+      render(); return;
+    }
+    if(IS_IOS){
+      openSheet('📲 Agregar a tu iPhone',`<p style="margin-top:0">En iPhone se agrega en 3 toques desde <b>Safari</b>:</p>
+        <ol class="steps-ios"><li><span>Toca el botón <b>Compartir</b> ⬆️ (abajo en la pantalla)</span></li><li><span>Elige <b>“Agregar a inicio”</b> ➕</span></li><li><span>Toca <b>“Agregar”</b> arriba a la derecha</span></li></ol>
+        <div class="tip"><span>💡</span><p>Hazlo <b>una sola vez</b>. Cuando mejoremos la app, el mismo ícono abrirá la versión nueva.</p></div>`,
+        {submitText:'Ya lo agregué ✅',onSubmit:()=>{store('latigo_ios_agregada',1);toast('¡Perfecto! Ábrela desde tu pantalla de inicio 🔥');render()}});
+      return;
+    }
+    if(load('latigo_instalada',0)){toast('La app ya está instalada en este equipo ✅');return}
+    openSheet('📲 Instalar la app',`<p style="margin-top:0">Abre este mismo link en <b>Chrome</b> (Android) o <b>Safari</b> (iPhone) y toca <b>Instalar</b>.</p>
+      <div class="tip"><span>💡</span><p>Si ya la instalaste antes, no hace falta hacerlo de nuevo: el ícono siempre abre la versión más nueva.</p></div>`,{noSubmit:true});
+  },
+  installLuego:()=>{store('latigo_install_luego',Date.now());render()},
+});
+if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 </script>
 </body>
 </html>
