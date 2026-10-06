@@ -65,9 +65,12 @@ Todo puede ir a GitHub, incluso en un repositorio público. La **clave secreta n
 
 ## Paso 4 · Conectar la app
 
-1. Abre la web en el celular → toca **⚙️**.
-2. Pega la **URL `/exec`** y la **CLAVE** → **🧪 Probar conexión** (debe decir *Conectado a "Látigo_BD"*) → **Guardar ajustes**.
-3. El indicador de arriba se pone **verde**.
+La URL de tu Apps Script ya viene puesta en `index.html` (`DEFAULT_API_URL`):
+`https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec`
+
+1. Abre la web en el celular. La primera vez se abre **⚙️ Ajustes** y te pide la clave.
+2. Escribe la **CLAVE** → **🧪 Probar conexión** (debe decir *Conectado a "Látigo_BD"*) → **Guardar ajustes**.
+3. El punto de arriba se pone **verde**.
 4. Si ya habías registrado datos antes de conectar: **⚙️ → ⬆️ Subir los datos de este celular a Sheets**.
 
 📱 **Instalar como app:**

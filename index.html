@@ -328,11 +328,12 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 /* =========================================================================
    EL LÁTIGO · Sistema de control
    -------------------------------------------------------------------------
-   Opcional: puedes dejar fija la URL de tu Apps Script aquí. Si tu repositorio
-   de GitHub es PÚBLICO, déjalo vacío y configúralo desde ⚙️ Ajustes en cada
-   celular (se guarda solo en ese dispositivo).
+   URL de la Apps Script conectada a la hoja "Látigo_BD". Puede ir en GitHub:
+   sin la CLAVE no sirve de nada. La CLAVE se escribe una vez en ⚙️ Ajustes de
+   cada celular (se guarda solo en ese dispositivo). No la pongas aquí si el
+   repositorio es público.
    ========================================================================= */
-const DEFAULT_API_URL = '';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = '';
 
 /* ---------- Estructura de datos (igual que las hojas de Google Sheets) ---------- */
@@ -359,6 +360,8 @@ const CFG_KEY='latigo_cfg_v1', DB_KEY='latigo_db_v1', OUT_KEY='latigo_outbox_v1'
 const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
 const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let cfg = Object.assign({apiUrl:DEFAULT_API_URL, token:DEFAULT_TOKEN, negocio:'El Látigo', moneda:'S/'}, load(CFG_KEY,{}));
+if(!cfg.apiUrl) cfg.apiUrl=DEFAULT_API_URL;
+if(!cfg.token) cfg.token=DEFAULT_TOKEN;
 const emptyDB=()=>{const o={};Object.keys(SCHEMA).forEach(k=>o[k]=[]);return o};
 
 /* ---------- Utilidades ---------- */
@@ -440,7 +443,10 @@ async function syncAll(showMsg){
     const j=await api({action:'all'});
     DB=normalizeDB(j.data); store(DB_KEY,DB); setSync('ok'); render();
     if(showMsg) toast('Datos actualizados ✅');
-  }catch(e){ setSync('err'); toast('No se pudo conectar: '+e.message,'bad') }
+  }catch(e){ setSync('err');
+    if(/clave/i.test(e.message)) { toast('🔑 Clave incorrecta o vacía. Revísala en ⚙️ Ajustes.','bad'); }
+    else if(/setup/i.test(e.message)) { toast('Falta ejecutar setup en Apps Script (ver README).','bad'); }
+    else toast('No se pudo conectar: '+e.message,'bad') }
 }
 function setSync(st){
   const el=$('#sync'); el.className='sync '+(st==='local'?'':st);
@@ -1005,14 +1011,14 @@ function formCobrado(p){
 }
 
 /* ===================== AJUSTES Y AYUDA ===================== */
-function formAjustes(){
+function formAjustes(aviso){
   const pend=load(OUT_KEY,[]).length;
-  openSheet('⚙️ Ajustes',`
+  openSheet('⚙️ Ajustes',`${aviso?`<div class="warnbox" style="margin:0 0 12px;font-size:.95rem">${aviso}</div>`:''}
     <div class="row2">${field('Nombre del negocio',inp('negocio',cfg.negocio))}${field('Moneda',inp('moneda',cfg.moneda,'placeholder="S/"'))}</div>
     <h4 style="margin:8px 0 6px;font-weight:900">🔗 Conexión con Google Sheets</h4>
     ${tip('Sin conexión, los datos se guardan <b>solo en este celular</b>. Conecta Google Sheets para tener respaldo y usarlo desde varios equipos. La guía está en el archivo README.')}
     ${field('URL de la Apps Script (termina en /exec)',inp('apiUrl',cfg.apiUrl,'type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"'))}
-    ${field('Clave secreta',inp('token',cfg.token,'type="password" autocomplete="off" placeholder="La misma que pusiste en el script"'))}
+    ${field('Clave secreta',inp('token',cfg.token,'type="password" autocomplete="off" placeholder="La que apareció al ejecutar setup (latigo-…)"'))}
     <div class="btn-row"><button type="button" class="btn sm ghost" data-act="testConn">🧪 Probar conexión</button><button type="button" class="btn sm ghost" data-act="syncNow">🔄 Traer datos de Sheets</button></div>
     <button type="button" class="btn sm ghost block" data-act="uploadAll">⬆️ Subir los datos de este celular a Sheets</button>
     ${pend?`<div class="warnbox" style="margin-bottom:10px">Hay ${pend} cambio(s) esperando subir a Google Sheets.</div>`:''}
@@ -1177,7 +1183,8 @@ function serializeAll(d){const o={};Object.keys(SCHEMA).forEach(k=>o[k]=d[k].map
 render();
 setTimeout(()=>$('#splash').classList.add('out'),900);
 setSync(cfg.apiUrl?'busy':'local');
-if(cfg.apiUrl) syncAll(false);
+if(cfg.apiUrl&&!cfg.token){ setSync('local'); setTimeout(()=>formAjustes('🔑 <b>Último paso:</b> escribe la <b>clave</b> que apareció al ejecutar <code>setup</code> en Apps Script, toca <b>🧪 Probar conexión</b> y luego <b>Guardar ajustes</b>.'),1100); }
+else if(cfg.apiUrl) syncAll(false);
 window.addEventListener('online',()=>cfg.apiUrl&&syncAll(false));
 </script>
 </body>
