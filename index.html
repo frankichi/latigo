@@ -328,13 +328,14 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 /* =========================================================================
    EL LÁTIGO · Sistema de control
    -------------------------------------------------------------------------
-   URL de la Apps Script conectada a la hoja "Látigo_BD". Puede ir en GitHub:
-   sin la CLAVE no sirve de nada. La CLAVE se escribe una vez en ⚙️ Ajustes de
-   cada celular (se guarda solo en ese dispositivo). No la pongas aquí si el
-   repositorio es público.
+   Conexión fija con la hoja "Látigo_BD" (el usuario no configura nada).
+   DEFAULT_TOKEN debe ser IGUAL a CLAVE_APP en apps-script/Code.gs.
+   Herramientas técnicas (demo, subir/restaurar, borrar): abre la web con
+   ?admin al final, ej.  https://tu-web.vercel.app/?admin
    ========================================================================= */
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
-const DEFAULT_TOKEN   = '';
+const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
+const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
 
 /* ---------- Estructura de datos (igual que las hojas de Google Sheets) ---------- */
 const SCHEMA = {
@@ -360,8 +361,7 @@ const CFG_KEY='latigo_cfg_v1', DB_KEY='latigo_db_v1', OUT_KEY='latigo_outbox_v1'
 const load=(k,d)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}};
 const store=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
 let cfg = Object.assign({apiUrl:DEFAULT_API_URL, token:DEFAULT_TOKEN, negocio:'El Látigo', moneda:'S/'}, load(CFG_KEY,{}));
-if(!cfg.apiUrl) cfg.apiUrl=DEFAULT_API_URL;
-if(!cfg.token) cfg.token=DEFAULT_TOKEN;
+cfg.apiUrl=DEFAULT_API_URL; cfg.token=DEFAULT_TOKEN;
 const emptyDB=()=>{const o={};Object.keys(SCHEMA).forEach(k=>o[k]=[]);return o};
 
 /* ---------- Utilidades ---------- */
@@ -422,7 +422,7 @@ async function api(payload, over){
 let flushing=null;
 function flushOutbox(){
   if(flushing) return flushing;
-  flushing=(async()=>{try{
+  flushing=(async()=>{await 0; try{
     let ob=load(OUT_KEY,[]);
     while(ob.length){ await api(ob[0]); ob=load(OUT_KEY,[]); ob.shift(); store(OUT_KEY,ob); }
   } finally { flushing=null }})();
@@ -433,7 +433,7 @@ async function push(op){
   const ob=load(OUT_KEY,[]); ob.push(op); store(OUT_KEY,ob);
   setSync('busy');
   try{ await flushOutbox(); setSync('ok') }
-  catch(e){ setSync('err'); toast('Guardado en el celular. Se subirá a Google Sheets cuando haya conexión.','warn') }
+  catch(e){ setSync('err'); toast('Sin conexión: guardado en el celular, se sube solo después 👍','warn') }
 }
 async function syncAll(showMsg){
   if(!cfg.apiUrl){ setSync('local'); if(showMsg) toast('Aún no conectas Google Sheets. Ve a ⚙️ Ajustes.','warn'); return }
@@ -444,14 +444,14 @@ async function syncAll(showMsg){
     DB=normalizeDB(j.data); store(DB_KEY,DB); setSync('ok'); render();
     if(showMsg) toast('Datos actualizados ✅');
   }catch(e){ setSync('err');
-    if(/clave/i.test(e.message)) { toast('🔑 Clave incorrecta o vacía. Revísala en ⚙️ Ajustes.','bad'); }
-    else if(/setup/i.test(e.message)) { toast('Falta ejecutar setup en Apps Script (ver README).','bad'); }
-    else toast('No se pudo conectar: '+e.message,'bad') }
+    if(/clave|setup/i.test(e.message)) toast('La base de datos aún no está lista. Avísale a quien instaló la app.','bad');
+    else toast('Sin conexión. Lo que anotes se guarda y se sube después 👍','warn') }
 }
 function setSync(st){
   const el=$('#sync'); el.className='sync '+(st==='local'?'':st);
   const pend=load(OUT_KEY,[]).length;
   $('.lbl',el).textContent={local:'Local',busy:'Guardando…',ok:'En línea',err:pend?`Pendiente (${pend})`:'Sin conexión'}[st];
+  el.title={local:'Solo en este celular',busy:'Guardando en la base de datos…',ok:'Todo guardado en la base de datos',err:'Sin conexión: se guardará después'}[st];
 }
 function saveRow(sheet,row){
   row=normalizeRow(sheet,row);
@@ -604,7 +604,7 @@ VIEWS.inicio=()=>{
   const onboard=done<steps.length?`<div class="card onboard"><h3>🚀 Primeros pasos · ${done} de ${steps.length}</h3>
     <p class="muted sm" style="margin:2px 0 0">Hazlos en este orden y la app hará todas las cuentas por ti.</p>
     <ol class="steps">${steps.map(([t,ok,act],i)=>`<li class="${ok?'ok':''}"><span class="n">${ok?'✓':i+1}</span><span>${t}</span>${ok?'':`<button type="button" class="btn sm" data-act="${act}">Hacer</button>`}</li>`).join('')}</ol>
-    ${!DB.Productos.length?`<button type="button" class="btn ghost sm" data-act="demo">🧪 Primero quiero probar con datos de ejemplo</button>`:''}</div>`:'';
+    ${ADMIN&&!DB.Productos.length?`<button type="button" class="btn ghost sm" data-act="demo">🧪 Primero quiero probar con datos de ejemplo</button>`:''}</div>`:'';
   const al=alertas();
   const s=serieMeses(6);
   const ult=[...DB.Pedidos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id)).slice(0,3);
@@ -1011,24 +1011,22 @@ function formCobrado(p){
 }
 
 /* ===================== AJUSTES Y AYUDA ===================== */
-function formAjustes(aviso){
-  const pend=load(OUT_KEY,[]).length;
-  openSheet('⚙️ Ajustes',`${aviso?`<div class="warnbox" style="margin:0 0 12px;font-size:.95rem">${aviso}</div>`:''}
+function formAjustes(){
+  const pend=load(OUT_KEY,[]).length, st=$('#sync').className;
+  const estado=st.includes('ok')?'🟢 Todo guardado en la base de datos <b>Látigo_BD</b>.':st.includes('busy')?'🟡 Guardando…':`🔴 Sin conexión.${pend?` Hay <b>${pend}</b> cambio(s) esperando subir; se suben solos cuando vuelva el internet.`:''}`;
+  openSheet('⚙️ Ajustes',`
+    <div class="calc" style="margin-top:0">${estado}</div>
     <div class="row2">${field('Nombre del negocio',inp('negocio',cfg.negocio))}${field('Moneda',inp('moneda',cfg.moneda,'placeholder="S/"'))}</div>
-    <h4 style="margin:8px 0 6px;font-weight:900">🔗 Conexión con Google Sheets</h4>
-    ${tip('Sin conexión, los datos se guardan <b>solo en este celular</b>. Conecta Google Sheets para tener respaldo y usarlo desde varios equipos. La guía está en el archivo README.')}
-    ${field('URL de la Apps Script (termina en /exec)',inp('apiUrl',cfg.apiUrl,'type="url" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"'))}
-    ${field('Clave secreta',inp('token',cfg.token,'type="password" autocomplete="off" placeholder="La que apareció al ejecutar setup (latigo-…)"'))}
-    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="testConn">🧪 Probar conexión</button><button type="button" class="btn sm ghost" data-act="syncNow">🔄 Traer datos de Sheets</button></div>
-    <button type="button" class="btn sm ghost block" data-act="uploadAll">⬆️ Subir los datos de este celular a Sheets</button>
-    ${pend?`<div class="warnbox" style="margin-bottom:10px">Hay ${pend} cambio(s) esperando subir a Google Sheets.</div>`:''}
-    <h4 style="margin:14px 0 6px;font-weight:900">💾 Respaldo</h4>
-    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="backup">⬇️ Descargar respaldo</button><button type="button" class="btn sm ghost" data-act="restore">⬆️ Restaurar respaldo</button></div>
-    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="demo">🧪 Cargar datos de ejemplo</button><button type="button" class="btn sm danger" data-act="wipe">🗑️ Borrar datos del celular</button></div>`,
-  {submitText:'Guardar ajustes',onSubmit:d=>{
-    const changed=d.apiUrl!==cfg.apiUrl||d.token!==cfg.token;
-    cfg=Object.assign(cfg,{negocio:d.negocio||'El Látigo',moneda:d.moneda||'S/',apiUrl:d.apiUrl,token:d.token});store(CFG_KEY,cfg);
-    toast('Ajustes guardados ✅');render();if(changed&&cfg.apiUrl) syncAll(true);else setSync(cfg.apiUrl?'ok':'local')}});
+    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="syncNow">🔄 Actualizar datos</button><button type="button" class="btn sm ghost" data-act="backup">⬇️ Descargar copia</button></div>
+    ${ADMIN?`<h4 style="margin:16px 0 6px;font-weight:900">🛠️ Administrador</h4>
+    ${tip('Estas opciones afectan la base de datos de todos. Úsalas con cuidado.')}
+    <div class="muted sm" style="margin-bottom:8px;word-break:break-all">Conectado a: <code>${esc(cfg.apiUrl)}</code></div>
+    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="testConn">🧪 Probar conexión</button><button type="button" class="btn sm ghost" data-act="uploadAll">⬆️ Subir datos del celular</button></div>
+    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="restore">♻️ Restaurar copia</button><button type="button" class="btn sm ghost" data-act="demo">🧪 Datos de ejemplo</button></div>
+    <button type="button" class="btn sm danger block" data-act="wipe">🗑️ Borrar datos de este celular</button>`:''}`,
+  {submitText:'Guardar',onSubmit:d=>{
+    cfg=Object.assign(cfg,{negocio:d.negocio||'El Látigo',moneda:d.moneda||'S/'});store(CFG_KEY,{negocio:cfg.negocio,moneda:cfg.moneda});
+    toast('Ajustes guardados ✅');render()}});
 }
 function ayuda(){
   openSheet('❓ ¿Cómo funciona?',`<div class="help"><img class="label-img" src="img/etiqueta.jpg" alt="Etiqueta de El Látigo">
@@ -1040,7 +1038,7 @@ function ayuda(){
     <h4>📱 Instálala como app</h4>
     <ul><li><b>Android (Chrome):</b> menú ⋮ → “Agregar a pantalla principal”.</li><li><b>iPhone (Safari):</b> botón compartir → “Agregar a inicio”.</li></ul>
     <h4>🟢 El punto de arriba</h4>
-    <p><b>Verde:</b> conectado a Google Sheets · <b>Amarillo:</b> guardando · <b>Rojo:</b> sin conexión (lo que anotes se sube después) · <b>Gris:</b> solo en este celular.</p>
+    <p><b>Verde:</b> conectado a Google Sheets · <b>Amarillo:</b> guardando · <b>Rojo:</b> sin conexión (lo que anotes se sube después) · <b>Gris:</b> solo en este celular. Toca el punto para actualizar.</p>
     <h4>✨ Truco</h4>
     <p>El botón dorado <b>+</b> te deja registrar cualquier cosa desde cualquier pantalla.</p></div>`,{noSubmit:true});
 }
@@ -1099,13 +1097,11 @@ const ACT={
     SH.onInput(null,f); toast(`Receta copiada y ajustada a ${fmtNum(b,0)} botellas 📋`);
   },
   csv:d=>csv(d.t,CSVS[d.t]()),
-  testConn:async()=>{const f=$('#shForm');try{const j=await api({action:'ping'},{apiUrl:f.elements.apiUrl.value.trim(),token:f.elements.token.value.trim()});toast('✅ '+(j.msg||'Conexión correcta'))}catch(e){toast('❌ '+e.message,'bad')}},
-  syncNow:async()=>{const f=$('#shForm');cfg.apiUrl=f.elements.apiUrl.value.trim();cfg.token=f.elements.token.value.trim();store(CFG_KEY,cfg);closeSheet();await syncAll(true)},
+  testConn:async()=>{try{const j=await api({action:'ping'});toast('✅ '+(j.msg||'Conexión correcta'))}catch(e){toast('❌ '+e.message,'bad')}},
+  syncNow:async()=>{closeSheet();await syncAll(true)},
   uploadAll:async()=>{
-    const f=$('#shForm'),over={apiUrl:f.elements.apiUrl.value.trim(),token:f.elements.token.value.trim()};
-    if(!over.apiUrl){toast('Primero pega la URL de Google Sheets','warn');return}
     if(!await ask('Esto <b>reemplaza</b> todo lo que hay en Google Sheets con los datos de este celular. ¿Continuar?','Sí, subir')) return;
-    try{toast('Subiendo…');await api({action:'replaceAll',data:serializeDB()},over);store(OUT_KEY,[]);cfg.apiUrl=over.apiUrl;cfg.token=over.token;store(CFG_KEY,cfg);setSync('ok');toast('¡Datos subidos a Google Sheets! ✅')}catch(e){toast('❌ '+e.message,'bad')}
+    try{toast('Subiendo…');await api({action:'replaceAll',data:serializeDB()});store(OUT_KEY,[]);setSync('ok');toast('¡Datos subidos a Google Sheets! ✅')}catch(e){toast('❌ '+e.message,'bad')}
   },
   backup:()=>{download(`el-latigo-respaldo_${today()}.json`,JSON.stringify(serializeDB(),null,1),'application/json');toast('Respaldo descargado 💾')},
   restore:()=>$('#fileIn').click(),
@@ -1183,8 +1179,7 @@ function serializeAll(d){const o={};Object.keys(SCHEMA).forEach(k=>o[k]=d[k].map
 render();
 setTimeout(()=>$('#splash').classList.add('out'),900);
 setSync(cfg.apiUrl?'busy':'local');
-if(cfg.apiUrl&&!cfg.token){ setSync('local'); setTimeout(()=>formAjustes('🔑 <b>Último paso:</b> escribe la <b>clave</b> que apareció al ejecutar <code>setup</code> en Apps Script, toca <b>🧪 Probar conexión</b> y luego <b>Guardar ajustes</b>.'),1100); }
-else if(cfg.apiUrl) syncAll(false);
+if(cfg.apiUrl) syncAll(false);
 window.addEventListener('online',()=>cfg.apiUrl&&syncAll(false));
 </script>
 </body>

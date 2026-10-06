@@ -25,7 +25,7 @@ el-latigo/
     └── actualizar-apps-script.sh ← (opcional) sube Code.gs sin copiar/pegar
 ```
 
-Todo puede ir a GitHub, incluso en un repositorio público. La **clave secreta no está en ningún archivo**: vive en Apps Script y en el celular.
+Recomendado: repositorio de GitHub **privado**, porque `index.html` lleva la clave de conexión.
 
 ---
 
@@ -37,13 +37,13 @@ Todo puede ir a GitHub, incluso en un repositorio público. La **clave secreta n
 4. Arriba elige la función **`setup`** y pulsa **▶ Ejecutar**.
    - Google pedirá permisos: *Revisar permisos → tu cuenta → Configuración avanzada → Ir a … (no seguro) → Permitir*. Es normal, el script es tuyo.
    - Se crean 7 pestañas en Látigo_BD: Productos, Insumos, Compras, Produccion, Clientes, Pedidos y Gastos.
-   - En el **Registro de ejecución** aparece tu **CLAVE** (ej. `latigo-1a2b3c4d`). **Cópiala.**
-5. **Implementar → Nueva implementación → ⚙️ Aplicación web**:
+   - En el **Registro de ejecución** aparece: *✅ "Látigo_BD" lista y conectada.*
+5. *(Solo la primera vez)* **Implementar → Nueva implementación → ⚙️ Aplicación web**:
    - *Ejecutar como:* **Yo**
    - *Quién tiene acceso:* **Cualquier usuario**
-6. **Implementar** → copia la **URL** que termina en `/exec`.
+6. **Implementar** → copia la **URL** que termina en `/exec` y ponla en `DEFAULT_API_URL` dentro de `index.html`. La de Látigo_BD ya está puesta.
 
-> 🔑 ¿Olvidaste la clave? Ejecuta la función `verClave`. Para cambiarla: ⚙️ Configuración del proyecto → Propiedades de la secuencia de comandos → `CLAVE`.
+> 🔑 La clave ya viene fija y es la misma en los dos lados: `CLAVE_APP` en `Code.gs` y `DEFAULT_TOKEN` en `index.html`. Nadie tiene que escribirla. Si la cambias, cámbiala en ambos, vuelve a ejecutar `setup` y sube la web.
 > 🔄 ¿Cambiaste el código? **Implementar → Administrar implementaciones → ✏️ → Versión: Nueva versión → Implementar**. La URL no cambia.
 
 ## Paso 2 · Subir a GitHub
@@ -63,15 +63,20 @@ Todo puede ir a GitHub, incluso en un repositorio público. La **clave secreta n
 2. Importa el repositorio `el-latigo` → *Framework Preset:* **Other** → **Deploy**.
 3. Obtendrás `el-latigo.vercel.app` (puedes cambiar el nombre o poner tu dominio). Cada vez que subas cambios a GitHub, Vercel se actualiza solo.
 
-## Paso 4 · Conectar la app
+## Paso 4 · Usar la app
 
-La URL de tu Apps Script ya viene puesta en `index.html` (`DEFAULT_API_URL`):
-`https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec`
+**No hay nada que configurar.** La app ya trae la conexión con Látigo_BD. Se abre la web y se usa. El punto de arriba en **verde** indica que todo está guardado.
 
-1. Abre la web en el celular. La primera vez se abre **⚙️ Ajustes** y te pide la clave.
-2. Escribe la **CLAVE** → **🧪 Probar conexión** (debe decir *Conectado a "Látigo_BD"*) → **Guardar ajustes**.
-3. El punto de arriba se pone **verde**.
-4. Si ya habías registrado datos antes de conectar: **⚙️ → ⬆️ Subir los datos de este celular a Sheets**.
+**🛠️ Modo administrador (solo para ti):** abre la web con `?admin` al final, por ejemplo `https://el-latigo.vercel.app/?admin`. En ⚙️ aparecen:
+- 🧪 Probar conexión
+- ⬆️ Subir datos del celular
+- ♻️ Restaurar copia
+- 🧪 Datos de ejemplo
+- 🗑️ Borrar datos del celular
+
+El usuario normal no ve estas opciones.
+
+> ✅ **Comprobar el backend:** abre tu URL `/exec?action=ping` en el navegador. Si dice `"Clave incorrecta"`, está **todo bien** (responde, pero no sin clave). Si dice `"Falta ejecutar setup"`, ejecuta `setup`.
 
 📱 **Instalar como app:**
 - **Android (Chrome):** menú ⋮ → *Agregar a pantalla principal*.
@@ -108,6 +113,7 @@ Queda con el ícono del burro en llamas.
 
 ## 🔐 Seguridad
 
-- Quien tenga la **URL `/exec` y la CLAVE** puede leer y escribir Látigo_BD. Compártelas solo con quien use la app.
+- La app no tiene usuario ni contraseña: **quien tenga el link de la web puede ver y editar los datos**, incluidos nombres, teléfonos y direcciones de clientes. Compártelo solo con quien use la app y no lo publiques.
+- La clave va dentro de `index.html`. Si quieres que nadie más la vea, deja el repositorio de GitHub en **privado** (Vercel funciona igual).
 - Sin internet la app sigue funcionando: guarda en el celular y sube los cambios cuando vuelve la conexión.
 - Haz respaldos de vez en cuando desde **⚙️ → Descargar respaldo**.

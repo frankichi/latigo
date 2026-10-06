@@ -6,15 +6,15 @@
  * 1. Abre Látigo_BD  →  Extensiones  →  Apps Script
  * 2. Borra lo que haya en Código.gs y pega TODO este archivo. Guarda (💾).
  * 3. Arriba elige la función  setup  y pulsa ▶ Ejecutar. Acepta los permisos.
- *    En el "Registro de ejecución" aparecerá tu CLAVE: cópiala para la app.
+ *    Crea las pestañas y deja lista la clave (la misma que ya trae la app).
  * 4. Implementar → Nueva implementación → Tipo: Aplicación web
  *      - Ejecutar como: Yo
  *      - Quién tiene acceso: Cualquier usuario
- *    Copia la URL que termina en /exec y pégala en la app (⚙️ Ajustes).
+ *    La URL /exec ya está escrita en index.html (DEFAULT_API_URL).
  *
- * La clave NO está escrita en este archivo: se guarda en
- * ⚙️ Configuración del proyecto → Propiedades de la secuencia de comandos → CLAVE.
- * Puedes cambiarla ahí cuando quieras (y luego cambiarla en la app).
+ * La clave de la app es CLAVE_APP (abajo) y debe ser IGUAL a DEFAULT_TOKEN
+ * en index.html. Si un día la cambias, cámbiala en los dos archivos,
+ * vuelve a ejecutar setup y sube la web de nuevo.
  *
  * Si modificas este código: Implementar → Administrar implementaciones
  * → ✏️ Editar → Versión: "Nueva versión" → Implementar (la URL no cambia).
@@ -22,6 +22,9 @@
 
 // ID de la hoja "Látigo_BD" (sale de su URL, entre /d/ y /edit)
 const SHEET_ID = '1kaNDTvYF2sQOqTzfiD9spfPKtSpaqiExUzpyTMMec6U';
+
+// Clave que usa la app (igual a DEFAULT_TOKEN en index.html)
+const CLAVE_APP = 'latigo-tah0or7h4j1nyt';
 
 const HOJAS = {
   Productos:  ['id','nombre','presentacion','precio','creado'],
@@ -48,13 +51,8 @@ function setup() {
   const def = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (def && def.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(def);
 
-  const props = PropertiesService.getScriptProperties();
-  let clave = props.getProperty('CLAVE');
-  if (!clave) {
-    clave = 'latigo-' + Utilities.getUuid().slice(0, 8);
-    props.setProperty('CLAVE', clave);
-  }
-  Logger.log('✅ "' + ss.getName() + '" lista. Tu CLAVE para la app es:  ' + clave);
+  PropertiesService.getScriptProperties().setProperty('CLAVE', CLAVE_APP);
+  Logger.log('✅ "' + ss.getName() + '" lista y conectada. Ya puedes usar la app.');
 }
 
 /** Muestra la clave actual en el registro (por si la olvidaste). */
@@ -67,7 +65,7 @@ function libro() {
 }
 
 function claveActual() {
-  return PropertiesService.getScriptProperties().getProperty('CLAVE') || '';
+  return PropertiesService.getScriptProperties().getProperty('CLAVE') || CLAVE_APP;
 }
 
 function doGet(e)  { return manejar((e && e.parameter) || {}); }
