@@ -45,7 +45,7 @@ Recomendado: repositorio de GitHub **privado**, porque `index.html` lleva la cla
 6. **Implementar** → copia la **URL** que termina en `/exec` y ponla en `DEFAULT_API_URL` dentro de `index.html`. La de Látigo_BD ya está puesta.
 
 > 🔑 La clave ya viene fija y es la misma en los dos lados: `CLAVE_APP` en `Code.gs` y `DEFAULT_TOKEN` en `index.html`. Nadie tiene que escribirla. Si la cambias, cámbiala en ambos, vuelve a ejecutar `setup` y sube la web.
-> 🔄 ¿Cambiaste el código? **Implementar → Administrar implementaciones → ✏️ → Versión: Nueva versión → Implementar**. La URL no cambia.
+> 🔄 ¿Cambiaste `Code.gs`? Ejecuta `setup` y luego **Implementar → Administrar implementaciones → ✏️ → Versión: Nueva versión → Implementar**. La URL no cambia.
 
 ## Paso 2 · Subir a GitHub
 
@@ -112,7 +112,7 @@ El usuario normal no ve estas opciones.
 4. **Producción → Lotes:** cada producción descuenta insumos, suma botellas y calcula el **costo por botella**.
 5. **Ventas → Pedidos:** cliente (nuevo o existente), productos y dirección. Botones *✓ Entregado*, *💵 Cobrado* y *WhatsApp* con el pedido ya escrito.
 6. **Producción → Gastos:** delivery, luz, publicidad, mano de obra…
-7. **Clientes:** datos de contacto, historial, producto favorito y ⭐ para los frecuentes.
+7. **Clientes:** son **números del 1 al 100**, como en el cuaderno del dueño (no se guardan nombres ni teléfonos). Cada número tiene un recuadro ✅ *Registrado* que se activa o desactiva con un toque. Al tocar el número se ve su historial, cuánto compró, cuánto debe y su producto favorito. La cantidad de números se cambia en ⚙️ Ajustes.
 8. **Reportes:** gráficos, ranking de clientes asiduos y descargas para Excel.
 
 **Cómo calcula:**
@@ -123,7 +123,7 @@ El usuario normal no ve estas opciones.
 
 ## 🔐 Seguridad
 
-- La app no tiene usuario ni contraseña: **quien tenga el link de la web puede ver y editar los datos**, incluidos nombres, teléfonos y direcciones de clientes. Compártelo solo con quien use la app y no lo publiques.
+- La app no tiene usuario ni contraseña: **quien tenga el link de la web puede ver y editar los datos** (ventas, costos y pedidos; los clientes son solo números). Compártelo solo con quien use la app y no lo publiques.
 - La clave va dentro de `index.html`. Si quieres que nadie más la vea, deja el repositorio de GitHub en **privado** (Vercel funciona igual).
 - Sin internet la app sigue funcionando: guarda en el celular y sube los cambios cuando vuelve la conexión.
 - Haz respaldos de vez en cuando desde **⚙️ → Descargar respaldo**.

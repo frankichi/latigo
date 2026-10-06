@@ -31,7 +31,7 @@ const HOJAS = {
   Insumos:    ['id','nombre','unidad','categoria','stockInicial','stockMinimo','costoRef','creado'],
   Compras:    ['id','fecha','insumoId','cantidad','costoTotal','proveedor','nota'],
   Produccion: ['id','fecha','productoId','botellas','consumos','costoInsumos','otrosCostos','costoTotal','nota'],
-  Clientes:   ['id','nombres','apellidos','telefono','whatsapp','direccion','referencia','nota','creado'],
+  Clientes:   ['id','numero','registrado','nota','creado'],   // clientes = números 1..100
   Pedidos:    ['id','fecha','clienteId','items','total','estado','pagado','metodoPago','direccionEntrega','nota'],
   Gastos:     ['id','fecha','categoria','descripcion','monto'],
 };
@@ -39,9 +39,14 @@ const HOJAS = {
 /** Crea las hojas con sus encabezados. Ejecútala una vez. */
 function setup() {
   const ss = libro();
+  // Formato antiguo de Clientes (nombres/teléfonos): se guarda como respaldo, no se borra
+  const viejo = ss.getSheetByName('Clientes');
+  if (viejo && String(viejo.getRange(1, 2).getValue()) === 'nombres') {
+    viejo.setName('Clientes_antiguo_' + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyyMMdd_HHmm'));
+  }
   Object.keys(HOJAS).forEach(function (nombre) {
     const sh = ss.getSheetByName(nombre) || ss.insertSheet(nombre);
-    const h = HOJAS[nombre];
+    const h = encabezados(sh, HOJAS[nombre]);
     sh.getRange(1, 1, 1, h.length).setValues([h])
       .setFontWeight('bold').setBackground('#0b0f12').setFontColor('#e8a93a');
     sh.setFrozenRows(1);
@@ -99,6 +104,21 @@ function manejar(p) {
   }
 }
 
+/** Encabezados actuales de la hoja + los que falten (nunca quita columnas). */
+function encabezados(sh, extra) {
+  const lastCol = Math.max(sh.getLastColumn(), 1);
+  const actuales = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(String).filter(function (x) { return x; });
+  (extra || []).forEach(function (k) {
+    if (/^[A-Za-z0-9_]{1,40}$/.test(k) && actuales.indexOf(k) < 0) actuales.push(k);
+  });
+  return actuales;
+}
+
+function asegurarEncabezados(sh, h) {
+  sh.getRange(1, 1, 1, h.length).setNumberFormat('@').setValues([h])
+    .setFontWeight('bold').setBackground('#0b0f12').setFontColor('#e8a93a');
+}
+
 function hoja(nombre) {
   if (!HOJAS[nombre]) throw new Error('Hoja no permitida: ' + nombre);
   let sh = libro().getSheetByName(nombre);
@@ -113,7 +133,7 @@ function leerTodo() {
 }
 
 function leerHoja(nombre) {
-  const sh = hoja(nombre), h = HOJAS[nombre], last = sh.getLastRow();
+  const sh = hoja(nombre), h = encabezados(sh, HOJAS[nombre]), last = sh.getLastRow();
   if (last < 2) return [];
   const tz = Session.getScriptTimeZone();
   return sh.getRange(2, 1, last - 1, h.length).getValues()
@@ -129,8 +149,8 @@ function leerHoja(nombre) {
     });
 }
 
-function fila(nombre, row) {
-  return HOJAS[nombre].map(function (k) { return row[k] == null ? '' : String(row[k]); });
+function fila(h, row) {
+  return h.map(function (k) { return row[k] == null ? '' : String(row[k]); });
 }
 
 function buscarFila(sh, id) {
@@ -143,10 +163,12 @@ function buscarFila(sh, id) {
 
 function guardar(nombre, row) {
   if (!row || !row.id) throw new Error('Falta el id');
-  const sh = hoja(nombre), h = HOJAS[nombre];
+  const sh = hoja(nombre);
+  const antes = encabezados(sh, []), h = encabezados(sh, HOJAS[nombre].concat(Object.keys(row)));
+  if (h.length !== antes.length) asegurarEncabezados(sh, h);
   const r = buscarFila(sh, row.id);
   const destino = r > 0 ? r : sh.getLastRow() + 1;
-  sh.getRange(destino, 1, 1, h.length).setNumberFormat('@').setValues([fila(nombre, row)]);
+  sh.getRange(destino, 1, 1, h.length).setNumberFormat('@').setValues([fila(h, row)]);
   return row;
 }
 
@@ -158,12 +180,16 @@ function eliminar(nombre, id) {
 
 function reemplazarTodo(data) {
   Object.keys(HOJAS).forEach(function (n) {
-    const sh = hoja(n), h = HOJAS[n], last = sh.getLastRow();
-    if (last > 1) sh.getRange(2, 1, last - 1, h.length).clearContent();
     const rows = (data && data[n]) || [];
+    const sh = hoja(n), last = sh.getLastRow();
+    let claves = HOJAS[n].slice();
+    rows.forEach(function (row) { claves = claves.concat(Object.keys(row)); });
+    const h = encabezados(sh, claves);
+    asegurarEncabezados(sh, h);
+    if (last > 1) sh.getRange(2, 1, last - 1, Math.max(sh.getLastColumn(), h.length)).clearContent();
     if (rows.length) {
       sh.getRange(2, 1, rows.length, h.length).setNumberFormat('@')
-        .setValues(rows.map(function (row) { return fila(n, row); }));
+        .setValues(rows.map(function (row) { return fila(h, row); }));
     }
   });
 }
