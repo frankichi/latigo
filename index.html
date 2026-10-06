@@ -365,7 +365,7 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '1.5.0';
+const APP_VERSION = '1.6.0';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
@@ -375,7 +375,7 @@ const SCHEMA = {
   Productos:  {f:['id','nombre','tipo','unidad','presentacion','precio','precioMayor','minMayor','caracteristicas','oculto','creado'], num:['precio','precioMayor','minMayor'], bool:['oculto']},
   Insumos:    {f:['id','nombre','unidad','categoria','stockInicial','stockMinimo','costoRef','creado'], num:['stockInicial','stockMinimo','costoRef']},
   Compras:    {f:['id','fecha','insumoId','cantidad','costoTotal','proveedor','nota'], num:['cantidad','costoTotal']},
-  Produccion: {f:['id','fecha','productoId','botellas','consumos','costoInsumos','otrosCostos','costoTotal','nota'], num:['botellas','costoInsumos','otrosCostos','costoTotal'], json:['consumos']},
+  Produccion: {f:['id','fecha','productoId','botellas','consumos','costoInsumos','costoLab','otrosCostos','costoTotal','nota'], num:['botellas','costoInsumos','costoLab','otrosCostos','costoTotal'], json:['consumos']},
   Clientes:   {f:['id','numero','registrado','zonaTipo','zona','nota','creado'], num:['numero'], bool:['registrado']},
   Pedidos:    {f:['id','fecha','clienteId','items','subtotal','total','estado','pagado','metodoPago','zonaTipo','zona','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','direccionEntrega','nota'], num:['subtotal','total','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio'], json:['items'], bool:['pagado']},
   Gastos:     {f:['id','fecha','categoria','descripcion','monto'], num:['monto']},
@@ -383,7 +383,7 @@ const SCHEMA = {
 const UNIDADES = ['L','ml','kg','g','unidad','caja','paquete'];
 const INS_CATS = ['Materia prima','Envases','Etiquetas y empaques','Otros'];
 const METODOS  = ['Efectivo','Yape','Plin','Transferencia','Tarjeta'];
-const GASTO_CATS = [['Mano de obra','👷'],['Delivery / transporte','🛵'],['Servicios (luz, agua, gas)','💡'],['Publicidad','📣'],['Alquiler','🏠'],['Permisos y trámites','📄'],['Otros','📦']];
+const GASTO_CATS = [['Laboratorista','🧪'],['Mano de obra','👷'],['Delivery / transporte','🛵'],['Servicios (luz, agua, gas)','💡'],['Publicidad','📣'],['Alquiler','🏠'],['Permisos y trámites','📄'],['Otros','📦']];
 const PERIODOS = [['mes','Este mes'],['mesAnt','Mes pasado'],['3m','Últimos 3 meses'],['anio','Este año'],['todo','Todo']];
 const MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const MESES_L = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -428,6 +428,8 @@ function setZonaCliente(n,zt,z){const old=byId('Clientes',cliId(n))||{};if(old.z
 const LIMA_DISTRITOS=['Ancón','Ate','Barranco','Breña','Carabayllo','Chaclacayo','Chorrillos','Cieneguilla','Comas','El Agustino','Independencia','Jesús María','La Molina','La Victoria','Lima Cercado','Lince','Los Olivos','Lurigancho-Chosica','Lurín','Magdalena del Mar','Miraflores','Pachacámac','Pucusana','Pueblo Libre','Puente Piedra','Punta Hermosa','Punta Negra','Rímac','San Bartolo','San Borja','San Isidro','San Juan de Lurigancho','San Juan de Miraflores','San Luis','San Martín de Porres','San Miguel','Santa Anita','Santa María del Mar','Santa Rosa','Santiago de Surco','Surquillo','Villa El Salvador','Villa María del Triunfo','Callao','Bellavista','Carmen de la Legua','La Perla','La Punta','Ventanilla','Mi Perú'];
 const PROVINCIAS=['Abancay','Arequipa','Ayacucho','Barranca','Cajamarca','Cañete','Cerro de Pasco','Chachapoyas','Chiclayo','Chimbote','Chincha','Cusco','Huacho','Huancavelica','Huancayo','Huánuco','Huaral','Huaraz','Ica','Iquitos','Juliaca','Moquegua','Piura','Pisco','Pucallpa','Puerto Maldonado','Puno','Tacna','Tarapoto','Trujillo','Tumbes'];
 const ZONA_TIPOS=[['Lima','🏙️ Lima (distrito)'],['Provincia','🛣️ Provincia'],['Recojo','🏠 Recoge el cliente']];
+/* último pago al laboratorista (del mismo producto si existe) */
+function ultimoLab(pid,exceptId){const L=[...DB.Produccion].filter(l=>l.id!==exceptId&&num(l.costoLab)>0).sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));return L.find(l=>l.productoId===pid)||L[0]||null}
 const envioCosto=p=>num(p.costoEnvio)+num(p.costoEmbalaje)+num(p.costoFlete);
 const zonaTxt=p=>p.zonaTipo==='Recojo'?'Recoge el cliente':p.zona?`${p.zona}${p.zonaTipo==='Provincia'?' (provincia)':''}`:'';
 function zonasUsadas(tipo){const o=new Set();DB.Pedidos.forEach(p=>{if(p.zona&&p.zonaTipo===tipo)o.add(p.zona)});DB.Clientes.forEach(c=>{if(c.zona&&c.zonaTipo===tipo)o.add(c.zona)});return [...o]}
@@ -561,12 +563,12 @@ function calc(p){
   const compras=sum(DB.Compras.filter(x=>inP(x.fecha,r)),x=>x.costoTotal);
   const gastos=sum(DB.Gastos.filter(x=>inP(x.fecha,r)),x=>x.monto);
   const lotes=DB.Produccion.filter(x=>inP(x.fecha,r));
-  const otros=sum(lotes,x=>x.otrosCostos);
+  const otros=sum(lotes,x=>x.otrosCostos), lab=sum(lotes,x=>x.costoLab), labGastos=sum(DB.Gastos.filter(x=>x.categoria==='Laboratorista'&&inP(x.fecha,r)),x=>x.monto);
   const envEnvio=sum(ped,x=>x.costoEnvio), envEmb=sum(ped,x=>x.costoEmbalaje), envFlete=sum(ped,x=>x.costoFlete), envios=envEnvio+envEmb+envFlete;
-  const ingresos=sum(cobrados,x=>x.total), costos=compras+gastos+otros+envios;
+  const ingresos=sum(cobrados,x=>x.total), costos=compras+gastos+otros+lab+envios;
   const botProd=sum(lotes,x=>x.botellas), costoProd=sum(lotes,x=>x.costoTotal);
   return {r,ped,ingresos,ventas:sum(ped,x=>x.total),porCobrar:sum(porCob,x=>x.total),nPorCobrar:porCob.length,compras,gastos,otros,costos,
-    ganancia:ingresos-costos,envios,envEnvio,envEmb,envFlete,cobroEnvio:sum(ped,x=>x.cobroEnvio),nEnv:ped.filter(x=>envioCosto(x)>0).length,botProd,botVend:sum(ped,p=>sum(p.items||[],i=>i.cantidad)),costoBot:botProd?costoProd/botProd:0,
+    ganancia:ingresos-costos,lab,labTotal:lab+labGastos,nLab:lotes.filter(x=>num(x.costoLab)>0).length,envios,envEnvio,envEmb,envFlete,cobroEnvio:sum(ped,x=>x.cobroEnvio),nEnv:ped.filter(x=>envioCosto(x)>0).length,botProd,botVend:sum(ped,p=>sum(p.items||[],i=>i.cantidad)),costoBot:botProd?costoProd/botProd:0,
     ticket:ped.length?sum(ped,x=>x.total)/ped.length:0,nPed:ped.length,nLotes:lotes.length};
 }
 function lastMonths(n){const d=new Date(),o=[];for(let i=n-1;i>=0;i--){const x=new Date(d.getFullYear(),d.getMonth()-i,1);o.push(x.getFullYear()+'-'+pad(x.getMonth()+1))}return o}
@@ -574,7 +576,7 @@ function serieMeses(n){
   const keys=lastMonths(n);
   return {labels:keys.map(mlabel),
     ing:keys.map(k=>sum(DB.Pedidos.filter(p=>p.estado!=='Cancelado'&&p.pagado&&mk(p.fecha)===k),p=>p.total)),
-    cos:keys.map(k=>sum(DB.Compras.filter(x=>mk(x.fecha)===k),x=>x.costoTotal)+sum(DB.Gastos.filter(x=>mk(x.fecha)===k),x=>x.monto)+sum(DB.Produccion.filter(x=>mk(x.fecha)===k),x=>x.otrosCostos)+sum(DB.Pedidos.filter(p=>p.estado!=='Cancelado'&&mk(p.fecha)===k),envioCosto)),
+    cos:keys.map(k=>sum(DB.Compras.filter(x=>mk(x.fecha)===k),x=>x.costoTotal)+sum(DB.Gastos.filter(x=>mk(x.fecha)===k),x=>x.monto)+sum(DB.Produccion.filter(x=>mk(x.fecha)===k),x=>num(x.otrosCostos)+num(x.costoLab))+sum(DB.Pedidos.filter(p=>p.estado!=='Cancelado'&&mk(p.fecha)===k),envioCosto)),
     prod:keys.map(k=>sum(DB.Produccion.filter(x=>mk(x.fecha)===k),x=>x.botellas)),
     vend:keys.map(k=>sum(DB.Pedidos.filter(p=>p.estado!=='Cancelado'&&mk(p.fecha)===k),p=>sum(p.items||[],i=>i.cantidad)))};
 }
@@ -770,10 +772,11 @@ VIEWS.produccion=()=>{
 };
 function vLotes(){
   const L=[...DB.Produccion].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));
-  return `${tip('Un <b>lote</b> es cada vez que produces. Anota cuánto salió y qué insumos usaste: se descuentan del almacén y se calcula el <b>costo por unidad</b>.')}
+  return `${tip('Un <b>lote</b> es cada vez que produces. Anota cuánto salió, qué insumos usaste y lo que pagaste al <b>laboratorista</b>: todo entra en el <b>costo por unidad</b>.')}
   <button type="button" class="btn block" data-act="newLote">+ Registrar producción</button>
   ${L.length?`<div class="list">${L.map(l=>{const p=byId('Productos',l.productoId);
     return `<div class="item"><div class="item-top"><div><b>${esc(prodName(p))}</b><div class="muted sm">${fmtDate(l.fecha)} · ${(l.consumos||[]).length} insumo(s)</div></div><div class="stock"><b>${fmtNum(l.botellas,0)}</b><small>${esc(uLbl(l.productoId,l.botellas))}</small></div></div>
+    ${num(l.costoLab)?`<div class="badges"><span class="badge info">🧪 Laboratorista ${money(l.costoLab)}</span></div>`:''}
     <div class="minis"><div><small>Costo del lote</small><b>${money(l.costoTotal)}</b></div><div><small>Costo c/u</small><b>${l.botellas?money(l.costoTotal/l.botellas):'—'}</b></div><div><small>Ganas c/u</small><b class="${p&&p.precio-l.costoTotal/(l.botellas||1)>=0?'t-ok':'t-bad'}">${p&&l.botellas?money(p.precio-l.costoTotal/l.botellas):'—'}</b></div></div>
     ${l.nota?`<div class="muted sm" style="margin-top:8px">📝 ${esc(l.nota)}</div>`:''}
     <div class="actions"><button type="button" class="btn sm ghost" data-act="editLote" data-id="${l.id}">Ver / editar</button></div></div>`}).join('')}</div>`
@@ -852,6 +855,7 @@ VIEWS.reportes=()=>{
   const ct={}; const add=(n,v)=>{if(v>0) ct[n]=(ct[n]||0)+v};
   add('Insumos (compras)',k.compras);
   DB.Gastos.filter(x=>inP(x.fecha,r)).forEach(g=>add(g.categoria||'Otros',g.monto));
+  add('Laboratorista',k.lab);
   add('Otros costos de producción',k.otros);
   add('Envíos (delivery)',k.envEnvio); add('Embalajes',k.envEmb); add('Fletes',k.envFlete);
   const vp={}; k.ped.forEach(pd=>(pd.items||[]).forEach(it=>{const o=vp[it.productoId]||(vp[it.productoId]={n:0,t:0});o.n+=num(it.cantidad);o.t+=num(it.cantidad)*num(it.precio)}));
@@ -860,7 +864,7 @@ VIEWS.reportes=()=>{
   const top=Object.keys(st).filter(id=>cliNum(id)>0).sort((a,b)=>st[b].n-st[a].n||st[b].total-st[a].total).slice(0,10);
   const top5=[...top].sort((a,b)=>st[b].total-st[a].total).slice(0,5);
   const lotes=DB.Produccion.filter(x=>inP(x.fecha,r));
-  const pp={}; lotes.forEach(l=>{const o=pp[l.productoId]||(pp[l.productoId]={b:0,c:0});o.b+=l.botellas;o.c+=l.costoTotal});
+  const pp={}; lotes.forEach(l=>{const o=pp[l.productoId]||(pp[l.productoId]={b:0,c:0,lab:0});o.b+=l.botellas;o.c+=l.costoTotal;o.lab+=num(l.costoLab)});
   return `<div class="page-head"><h2>📊 Reportes</h2></div>
   ${chips('period',PERIODOS,p)}
   <div class="kpis">
@@ -872,6 +876,7 @@ VIEWS.reportes=()=>{
     ${kpi('🛍️','Unidades vendidas',fmtNum(k.botVend,0),`${k.nPed} pedido(s)`,'info')}
     ${kpi('🍾','Costo por unidad',k.costoBot?money(k.costoBot):'—','promedio','')}
     ${kpi('🧾','Ticket promedio',k.ticket?money(k.ticket):'—','por pedido','')}
+    ${kpi('🧪','Laboratorista',money(k.labTotal),k.nLab?`${k.nLab} lote(s) con laboratorista`:'en el periodo','wine')}
     ${kpi('🚚','Envíos y embalaje',money(k.envios),`${k.nEnv} pedido(s) con envío`,'bad')}
     ${kpi('↩️','Envío cobrado a clientes',money(k.cobroEnvio),k.envios?`cubre el ${Math.round(k.cobroEnvio/k.envios*100)}% del costo`:'','ok')}
   </div>
@@ -897,8 +902,8 @@ VIEWS.reportes=()=>{
     ${ks.map(key=>{const o=g[key],t=o.e+o.m+o.f;return `<tr><td><b>${esc(key)}</b></td><td class="r">${o.n}</td><td class="r">${money(o.e)}</td><td class="r">${money(o.m)}</td><td class="r">${money(o.f)}</td><td class="r"><b>${money(t)}</b></td><td class="r">${money(t/o.n)}</td><td class="r t-ok">${money(o.c)}</td></tr>`}).join('')}
     </tbody></table></div></div>`})()}
   <div class="card"><h3>🏭 Costo de producción por producto</h3>
-    ${Object.keys(pp).length?`<div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Producido</th><th class="r">Costo total</th><th class="r">Costo c/u</th><th class="r">Precio</th><th class="r">Ganas c/u</th></tr></thead><tbody>
-    ${Object.keys(pp).map(id=>{const pr=byId('Productos',id),o=pp[id],cu=o.b?o.c/o.b:0;return `<tr><td><b>${esc(prodName(pr))}</b></td><td class="r">${fmtNum(o.b,0)}</td><td class="r">${money(o.c)}</td><td class="r">${money(cu)}</td><td class="r">${pr?money(pr.precio):'—'}</td><td class="r ${pr&&pr.precio-cu>=0?'t-ok':'t-bad'}"><b>${pr?money(pr.precio-cu):'—'}</b></td></tr>`}).join('')}
+    ${Object.keys(pp).length?`<div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Producido</th><th class="r">🧪 Lab.</th><th class="r">Costo total</th><th class="r">Costo c/u</th><th class="r">Precio</th><th class="r">Ganas c/u</th></tr></thead><tbody>
+    ${Object.keys(pp).map(id=>{const pr=byId('Productos',id),o=pp[id],cu=o.b?o.c/o.b:0;return `<tr><td><b>${esc(prodName(pr))}</b></td><td class="r">${fmtNum(o.b,0)}</td><td class="r">${money(o.lab)}</td><td class="r">${money(o.c)}</td><td class="r">${money(cu)}</td><td class="r">${pr?money(pr.precio):'—'}</td><td class="r ${pr&&pr.precio-cu>=0?'t-ok':'t-bad'}"><b>${pr?money(pr.precio-cu):'—'}</b></td></tr>`}).join('')}
     </tbody></table></div>`:empty('🏭','Sin producción en este periodo','')}
   </div>
   <div class="card"><h3>⬇️ Descargar en Excel (CSV)</h3><p class="muted sm" style="margin:0 0 10px">Se abre en Excel o Google Sheets.</p>
@@ -1013,10 +1018,11 @@ function formLote(l={},preProd){
   const lines=(l.consumos&&l.consumos.length)?l.consumos:[{}];
   const upd=f=>{
     $$('.line.cons',f).forEach(r=>{const i=byId('Insumos',$('[data-role=ins]',r).value);$('[data-role=unit]',r).textContent=i?i.unidad:''});
-    const cons=readCons(f), ci=sum(cons,c=>c.cantidad*costoUnit(c.insumoId)), ot=num(f.elements.otrosCostos.value), b=num(f.elements.botellas.value), tot=ci+ot, p=byId('Productos',f.elements.productoId.value), u=p?p.unidad:'unidad';
+    const lab=num(f.elements.costoLab.value), cons=readCons(f), ci=sum(cons,c=>c.cantidad*costoUnit(c.insumoId)), ot=num(f.elements.otrosCostos.value), b=num(f.elements.botellas.value), tot=ci+lab+ot, p=byId('Productos',f.elements.productoId.value), u=p?p.unidad:'unidad';
+    const ul=ultimoLab(f.elements.productoId.value,l.id); $('#labHint').textContent=ul?`Último pago: ${money(ul.costoLab)} (${fmtDate(ul.fecha)})`:'Lo que te cobra por esta tanda.';
     $('#lblCant').textContent=`¿Cuántas ${plural(u,2)} salieron? *`;
     const falta=cons.filter(c=>c.cantidad>stockIns(c.insumoId,l.id)).map(c=>{const i=byId('Insumos',c.insumoId);return `${esc(i.nombre)} (tienes ${fmtNum(stockIns(c.insumoId,l.id))} ${esc(i.unidad)})`});
-    $('#lCalc').innerHTML=`<div class="calc-row"><span>Insumos usados</span><b>${money(ci)}</b></div><div class="calc-row"><span>Otros costos</span><b>${money(ot)}</b></div><div class="calc-row total"><span>Costo del lote</span><b>${money(tot)}</b></div>
+    $('#lCalc').innerHTML=`<div class="calc-row"><span>Insumos usados</span><b>${money(ci)}</b></div><div class="calc-row"><span>🧪 Laboratorista</span><b>${money(lab)}</b></div><div class="calc-row"><span>Otros costos</span><b>${money(ot)}</b></div><div class="calc-row total"><span>Costo del lote</span><b>${money(tot)}</b></div>
       ${b>0?`<div class="calc-row big"><span>Cada ${esc(u)} te cuesta</span><b>${money(tot/b)}</b></div>`:''}
       ${b>0&&p&&p.precio?`<div class="calc-row"><span>Vendiendo a ${money(p.precio)} ganas</span><b class="${p.precio-tot/b>=0?'t-ok':'t-bad'}">${money(p.precio-tot/b)} c/u</b></div>`:''}
       ${falta.length?`<div class="warnbox">⚠️ No alcanza en el almacén: ${falta.join(', ')}. ¿Olvidaste registrar una compra?</div>`:''}`;
@@ -1026,14 +1032,15 @@ function formLote(l={},preProd){
     ${field('<span id="lblCant">¿Cuántas salieron? *</span>',inp('botellas',l.botellas||'','type="number" min="1" step="1" inputmode="numeric" required placeholder="Ej: 48"'))}
     <div class="lines-head"><b>¿Qué insumos usaste?</b><button type="button" class="btn sm ghost" data-act="copyReceta">📋 Copiar último lote</button></div>
     ${DB.Insumos.length?`<div class="lines" id="lines">${lines.map(consLine).join('')}</div><button type="button" class="btn sm ghost" data-act="addCons" style="margin-bottom:12px">+ Agregar insumo</button>`
-      :`<div class="warnbox" style="margin-bottom:12px">Aún no tienes insumos en el almacén. Puedes guardar el lote igual, pero el costo solo incluirá “otros costos”.</div>`}
-    ${field(`Otros costos del lote (${cfg.moneda})`,inp('otrosCostos',l.otrosCostos||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'),'Mano de obra, gas, luz usada en esta tanda, etc.')}
+      :`<div class="warnbox" style="margin-bottom:12px">Aún no tienes insumos en el almacén. Puedes guardar el lote igual, pero el costo solo incluirá laboratorista y otros costos.</div>`}
+    <div class="row2">${field(`🧪 Laboratorista (${cfg.moneda})`,inp('costoLab',l.costoLab||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"')+'<small id="labHint"></small>')}${field(`Otros costos (${cfg.moneda})`,inp('otrosCostos',l.otrosCostos||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'),'Mano de obra, gas, luz…')}</div>
     ${field('Nota',inp('nota',l.nota,'placeholder="Ej: macerado 15 días"'))}
     <div class="calc" id="lCalc"></div>`,
-  {onOpen:upd,onInput:(e,f)=>upd(f),
-   onSubmit:(d,f)=>{const cons=readCons(f),ci=sum(cons,c=>c.cantidad*costoUnit(c.insumoId)),ot=num(d.otrosCostos);
+  {onOpen:f=>{if(!l.id){const ul=ultimoLab(f.elements.productoId.value);if(ul&&!f.elements.costoLab.value)f.elements.costoLab.value=ul.costoLab}upd(f)},
+   onInput:(e,f)=>{if(!l.id&&e&&e.target&&e.target.name==='productoId'&&!num(f.elements.costoLab.value)){const ul=ultimoLab(e.target.value);if(ul)f.elements.costoLab.value=ul.costoLab}upd(f)},
+   onSubmit:(d,f)=>{const cons=readCons(f),ci=sum(cons,c=>c.cantidad*costoUnit(c.insumoId)),ot=num(d.otrosCostos),lab=num(d.costoLab);
      if(num(d.botellas)<=0){toast('Indica cuánto salió de este lote','bad');return false}
-     saveRow('Produccion',Object.assign({},l,d,{id:l.id||uid(),consumos:cons.map(c=>({insumoId:c.insumoId,cantidad:c.cantidad,costoUnit:+costoUnit(c.insumoId).toFixed(4)})),costoInsumos:+ci.toFixed(2),otrosCostos:ot,costoTotal:+(ci+ot).toFixed(2)}));
+     saveRow('Produccion',Object.assign({},l,d,{id:l.id||uid(),consumos:cons.map(c=>({insumoId:c.insumoId,cantidad:c.cantidad,costoUnit:+costoUnit(c.insumoId).toFixed(4)})),costoInsumos:+ci.toFixed(2),costoLab:lab,otrosCostos:ot,costoTotal:+(ci+lab+ot).toFixed(2)}));
      toast(l.id?'Producción actualizada ✅':`¡${fmtNum(d.botellas,0)} ${uLbl(d.productoId,num(d.botellas))} al stock! ${tipoIcon((byId('Productos',d.productoId)||{}).tipo)}`);render()},
    onDelete:l.id?()=>confirmDel('Produccion',l.id,'este lote (lo producido saldrá del stock y los insumos volverán al almacén)'):null});
 }
@@ -1171,7 +1178,7 @@ function ayuda(){
     <h4>🔁 El ciclo del negocio</h4>
     <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y sube tu stock.</li><li><b>Vendes en un pedido</b> 🧾 → baja el stock.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
     <h4>📖 Palabras clave</h4>
-    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
+    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Laboratorista:</b> lo que te cobra por cada tanda se anota en el lote y suma al costo por unidad. Si le pagas algo aparte (un análisis, un trámite), anótalo en Gastos → 🧪 Laboratorista.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
     <h4>📲 Tenla como app en tu celular</h4>
     <p>Toca <b>Instalar</b> (en Inicio o en ⚙️ Ajustes) y tendrás el ícono del burro en tu pantalla de inicio. Cuando haya mejoras, se actualiza sola: <b>no hace falta volver a instalar</b>.</p>
     <h4>🟢 El punto de arriba</h4>
@@ -1189,9 +1196,10 @@ const dec=n=>String(+(+n).toFixed(2)).replace('.',',');
 const CSVS={
   clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° cliente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Unidades:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
   pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Cliente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Subtotal:dec(p.subtotal||p.total-num(p.cobroEnvio)),'Envío cobrado':dec(p.cobroEnvio),Total:dec(p.total),'Tipo destino':p.zonaTipo,Destino:p.zona,'Costo envío':dec(p.costoEnvio),'Costo embalaje':dec(p.costoEmbalaje),'Costo flete':dec(p.costoFlete),Estado:p.estado,Cobrado:p.pagado?'Sí':'No','Forma de pago':p.metodoPago,Referencia:p.direccionEntrega})),
-  produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Tipo:(byId('Productos',l.productoId)||{}).tipo||'',Cantidad:l.botellas,Unidad:(byId('Productos',l.productoId)||{}).unidad||'','Costo insumos':dec(l.costoInsumos),'Otros costos':dec(l.otrosCostos),'Costo total':dec(l.costoTotal),'Costo por unidad':dec(l.botellas?l.costoTotal/l.botellas:0),Nota:l.nota})),
+  produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Tipo:(byId('Productos',l.productoId)||{}).tipo||'',Cantidad:l.botellas,Unidad:(byId('Productos',l.productoId)||{}).unidad||'','Costo insumos':dec(l.costoInsumos),Laboratorista:dec(l.costoLab),'Otros costos':dec(l.otrosCostos),'Costo total':dec(l.costoTotal),'Costo por unidad':dec(l.botellas?l.costoTotal/l.botellas:0),Nota:l.nota})),
   costos:()=>[...DB.Compras.map(c=>{const i=byId('Insumos',c.insumoId);return {Fecha:c.fecha,Tipo:'Compra de insumo',Detalle:`${c.cantidad} ${i?i.unidad:''} ${i?i.nombre:''}`.trim(),Monto:dec(c.costoTotal)}}),
     ...DB.Gastos.map(g=>({Fecha:g.fecha,Tipo:g.categoria,Detalle:g.descripcion,Monto:dec(g.monto)})),
+    ...DB.Produccion.filter(l=>num(l.costoLab)>0).map(l=>({Fecha:l.fecha,Tipo:'Laboratorista',Detalle:prodName(byId('Productos',l.productoId)),Monto:dec(l.costoLab)})),
     ...DB.Produccion.filter(l=>l.otrosCostos).map(l=>({Fecha:l.fecha,Tipo:'Otros costos de producción',Detalle:prodName(byId('Productos',l.productoId)),Monto:dec(l.otrosCostos)})),
     ...DB.Pedidos.filter(p=>p.estado!=='Cancelado').flatMap(p=>[['Envío','costoEnvio'],['Embalaje','costoEmbalaje'],['Flete','costoFlete']].filter(([,k])=>num(p[k])>0).map(([t,k])=>({Fecha:p.fecha,Tipo:t,Detalle:`${cliShort(p.clienteId)} → ${zonaTxt(p)||'sin destino'}`,Monto:dec(p[k])})))].sort((a,b)=>a.Fecha.localeCompare(b.Fecha)),
 };
@@ -1237,6 +1245,7 @@ const ACT={
     const k=last.botellas?b/last.botellas:1;
     if($('#lines')) $('#lines').innerHTML=last.consumos.map(c=>consLine({insumoId:c.insumoId,cantidad:+(num(c.cantidad)*k).toFixed(3)})).join('');
     if(!num(f.elements.otrosCostos.value)&&last.otrosCostos) f.elements.otrosCostos.value=+(last.otrosCostos*k).toFixed(2);
+    if(!num(f.elements.costoLab.value)&&num(last.costoLab)) f.elements.costoLab.value=last.costoLab;
     SH.onInput(null,f); toast(`Receta copiada y ajustada a ${fmtNum(b,0)} ${uLbl(pid,b)} 📋`);
   },
   csv:d=>csv(d.t,CSVS[d.t]()),
@@ -1305,8 +1314,8 @@ function demoData(){
     [['p1',ri(42,50)],['p2',ri(24,30)],['p3',ri(28,32)],['p4',ri(25,30)]].forEach(([pid,b],k)=>{
       if(mb===0&&pid==='p3') return;
       const cons=R[pid].map(([iid,q])=>({insumoId:iid,cantidad:+(q*b).toFixed(2),costoUnit:cu[iid]}));
-      const ci=sum(cons,c=>c.cantidad*c.costoUnit), ot=ri(25,45);
-      d.Produccion.push({id:`l${mb}${k}`,fecha:dia(mb,ri(5,9)),productoId:pid,botellas:b,consumos:cons,costoInsumos:+ci.toFixed(2),otrosCostos:ot,costoTotal:+(ci+ot).toFixed(2),nota:pid==='p2'?'Macerado 15 días':''});
+      const ci=sum(cons,c=>c.cantidad*c.costoUnit), ot=ri(10,20), lab=pid==='p4'?40:50;
+      d.Produccion.push({id:`l${mb}${k}`,fecha:dia(mb,ri(5,9)),productoId:pid,botellas:b,consumos:cons,costoInsumos:+ci.toFixed(2),costoLab:lab,otrosCostos:ot,costoTotal:+(ci+lab+ot).toFixed(2),nota:pid==='p2'?'Macerado 15 días':''});
     });
     [['Mano de obra',ri(250,320),'Ayudante de embotellado'],['Servicios (luz, agua, gas)',ri(35,55),'Gas y luz'],['Publicidad',ri(30,60),'Anuncio en Instagram']]
       .filter((g,k)=>mb>0||k===1).forEach(([cat,m,desc],k)=>d.Gastos.push({id:`g${mb}${k}`,fecha:dia(mb,ri(10,26)),categoria:cat,descripcion:desc,monto:m}));
