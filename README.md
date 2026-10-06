@@ -106,7 +106,12 @@ El usuario normal no ve estas opciones.
 
 ## 🧭 Cómo se usa
 
-1. **Ventas → Mis productos:** crea lo que vendes con su precio.
+1. **Ventas → Mis productos:** crea todo lo que vendes. Cada producto tiene:
+   - **Tipo:** 💧 Líquido, 📦 Sólido o uno nuevo con *➕ Crear otro tipo…* (ej. Cápsulas, Combos). Los tipos nuevos aparecen solos en filtros, listas y reportes.
+   - **Unidad de venta:** botella, frasco, bolsa, caja… Se sugiere según el tipo.
+   - **Presentación, características y precio**, más un **precio por mayor** opcional que se aplica solo en el pedido al llegar a la cantidad indicada.
+   - **📄 Duplicar** para crear variantes rápido (otro tamaño, otro sabor).
+   - **🙈 Ocultar** para lo que ya no se vende, conservando su historial.
 2. **Producción → Almacén:** registra tus insumos con lo que tienes hoy y un mínimo para alertas.
 3. **Producción → Compras:** cada compra suma al almacén y fija el precio promedio.
 4. **Producción → Lotes:** cada producción descuenta insumos, suma botellas y calcula el **costo por botella**.

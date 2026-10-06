@@ -7,7 +7,7 @@
    - Nunca toca las llamadas a Google Sheets (eso lo maneja la app).
    Si cambias este archivo, sube el número de VERSION.
    ========================================================================= */
-const VERSION = 'latigo-v1.3.0';
+const VERSION = 'latigo-v1.4.0';
 const BASICOS = ['./', './manifest.webmanifest', './img/icon-192.png', './img/logo-header.png', './img/logo-emblema.jpg'];
 
 self.addEventListener('install', e => {

@@ -361,14 +361,14 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '1.3.0';
+const APP_VERSION = '1.4.0';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
 
 /* ---------- Estructura de datos (igual que las hojas de Google Sheets) ---------- */
 const SCHEMA = {
-  Productos:  {f:['id','nombre','presentacion','precio','creado'], num:['precio']},
+  Productos:  {f:['id','nombre','tipo','unidad','presentacion','precio','precioMayor','minMayor','caracteristicas','oculto','creado'], num:['precio','precioMayor','minMayor'], bool:['oculto']},
   Insumos:    {f:['id','nombre','unidad','categoria','stockInicial','stockMinimo','costoRef','creado'], num:['stockInicial','stockMinimo','costoRef']},
   Compras:    {f:['id','fecha','insumoId','cantidad','costoTotal','proveedor','nota'], num:['cantidad','costoTotal']},
   Produccion: {f:['id','fecha','productoId','botellas','consumos','costoInsumos','otrosCostos','costoTotal','nota'], num:['botellas','costoInsumos','otrosCostos','costoTotal'], json:['consumos']},
@@ -420,6 +420,16 @@ const nReg=()=>DB.Clientes.filter(c=>c.registrado&&c.numero>0).length;
 function maxCli(){let m=num(cfg.maxClientes)||100;DB.Clientes.forEach(c=>{if(c.registrado&&c.numero>m)m=c.numero});DB.Pedidos.forEach(p=>{const n=cliNum(p.clienteId);if(n>m)m=n});return m}
 function setRegistrado(n,val){const old=byId('Clientes',cliId(n))||{};saveRow('Clientes',{id:cliId(n),numero:n,registrado:!!val,nota:old.nota||'',creado:old.creado||today()})}
 const prodName=p=>p?(p.nombre+(p.presentacion?' '+p.presentacion:'')):'Producto eliminado';
+/* Tipos de producto: Líquido y Sólido de base; el dueño puede crear más (aparecen solos en las listas) */
+const TIPOS_BASE=[['Líquido','💧'],['Sólido','📦']];
+const UNIDADES_VENTA=['botella','frasco','bolsa','sobre','caja','pack','unidad','kg','litro'];
+const defUnidad=t=>t==='Líquido'?'botella':'unidad';
+const tipoIcon=t=>(TIPOS_BASE.find(x=>x[0]===t)||[0,'🏷️'])[1];
+function tiposProducto(){const o=TIPOS_BASE.map(x=>x[0]);DB.Productos.forEach(p=>{if(p.tipo&&!o.includes(p.tipo))o.push(p.tipo)});return o}
+function unidadesVenta(){const o=UNIDADES_VENTA.slice();DB.Productos.forEach(p=>{if(p.unidad&&!o.includes(p.unidad))o.push(p.unidad)});return o}
+function plural(u,n){u=String(u||'unidad');if(n===1)return u;if(/^(kg|g|ml|l|lt|oz)$/i.test(u))return u;if(u==='unidad')return 'unidades';return /[aeiouáéó]$/i.test(u)?u+'s':u+'es'}
+const uLbl=(pid,n)=>{const p=byId('Productos',pid);return plural(p?p.unidad:'unidad',n)};
+const precioPara=(p,q)=>p?(p.precioMayor>0&&p.minMayor>0&&q>=p.minMayor?p.precioMayor:p.precio):0;
 
 /* ---------- Normalizar datos ---------- */
 function normalizeRow(sheet,r){
@@ -431,6 +441,7 @@ function normalizeRow(sheet,r){
   if(o.fecha) o.fecha=String(o.fecha).slice(0,10);
   o.id=String(o.id);
   if(sheet==='Clientes'&&!o.numero) o.numero=cliNum(o.id);
+  if(sheet==='Productos'){ if(!o.tipo) o.tipo='Líquido'; if(!o.unidad) o.unidad=defUnidad(o.tipo); }
   return o;
 }
 function normalizeDB(d){const o=emptyDB();Object.keys(SCHEMA).forEach(k=>{o[k]=((d&&d[k])||[]).filter(r=>r&&r.id).map(r=>normalizeRow(k,r))});return o}
@@ -563,7 +574,7 @@ function statsClientes(r){
 function alertas(){
   const a=[];
   DB.Insumos.forEach(i=>{const s=stockIns(i.id); if(i.stockMinimo>0&&s<=i.stockMinimo) a.push([s<=0?'bad':'warn',`${s<=0?'Se acabó':'Queda poco'} <b>${esc(i.nombre)}</b>: ${fmtNum(s)} ${esc(i.unidad)} (mínimo ${fmtNum(i.stockMinimo)})`,`<button class="btn sm gold" data-act="newCompra" data-ins="${i.id}">🛒 Comprar</button>`])});
-  if(DB.Produccion.length) DB.Productos.forEach(p=>{const s=stockProd(p.id); if(s<=0) a.push(['bad',`Sin botellas de <b>${esc(prodName(p))}</b> (stock ${fmtNum(s,0)})`,`<button class="btn sm" data-act="newLote" data-prod="${p.id}">🏭 Producir</button>`])});
+  if(DB.Produccion.length) DB.Productos.forEach(p=>{const s=stockProd(p.id); if(s<=0) a.push(['bad',`Sin stock de <b>${esc(prodName(p))}</b> (${fmtNum(s,0)} ${esc(plural(p.unidad,s))})`,`<button class="btn sm" data-act="newLote" data-prod="${p.id}">🏭 Producir</button>`])});
   const pend=DB.Pedidos.filter(p=>p.estado==='Pendiente');
   if(pend.length) a.push(['info',`Tienes <b>${pend.length}</b> pedido(s) por entregar`,`<button class="btn sm ghost" data-act="goPed" data-f="pend">Ver</button>`]);
   const cob=DB.Pedidos.filter(p=>!p.pagado&&p.estado!=='Cancelado');
@@ -588,7 +599,10 @@ const chips=(act,items,cur)=>`<div class="chips">${items.map(([k,l])=>`<button t
 const field=(label,input,hint='')=>`<label class="field"><span>${label}</span>${input}${hint?`<small>${hint}</small>`:''}</label>`;
 const inp=(name,val,attrs='')=>`<input name="${name}" value="${esc(val??'')}" ${attrs}>`;
 const sel=(name,opts,val,attrs='')=>`<select name="${name}" ${attrs}>${opts.map(o=>{const [v,l]=Array.isArray(o)?o:[o,o];return `<option value="${esc(v)}" ${String(v)===String(val??'')?'selected':''}>${esc(l)}</option>`}).join('')}</select>`;
-const prodOpts=(val,blank)=>(blank?`<option value="">— Elige —</option>`:'')+DB.Productos.map(p=>`<option value="${p.id}" ${p.id===val?'selected':''}>${esc(prodName(p))}</option>`).join('');
+const prodOpts=(val,blank)=>(blank?`<option value="">— Elige —</option>`:'')+tiposProducto().map(t=>{
+  const ps=DB.Productos.filter(p=>p.tipo===t&&(!p.oculto||p.id===val)).sort((a,b)=>prodName(a).localeCompare(prodName(b)));
+  return ps.length?`<optgroup label="${tipoIcon(t)} ${esc(t)}">${ps.map(p=>`<option value="${p.id}" ${p.id===val?'selected':''}>${esc(prodName(p))} · ${money(p.precio)}/${esc(p.unidad)}</option>`).join('')}</optgroup>`:'';
+}).join('');
 const insOpts=(val,blank)=>(blank?`<option value="">— Elige —</option>`:'')+[...DB.Insumos].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(i=>`<option value="${i.id}" ${i.id===val?'selected':''}>${esc(i.nombre)} (${esc(i.unidad)})</option>`).join('');
 
 /* ---------- Gráficos ---------- */
@@ -621,7 +635,7 @@ function hbarCfg(labels,data){
 }
 
 /* ---------- Navegación ---------- */
-const route={tab:'inicio',sub:{ventas:'pedidos',produccion:'lotes'},fPed:'todos',cFil:'todos',period:'mes',q:{ped:'',cli:''}};
+const route={tab:'inicio',sub:{ventas:'pedidos',produccion:'lotes'},fPed:'todos',cFil:'todos',fProd:'todos',period:'mes',q:{ped:'',cli:''}};
 function render(){
   $('#view').innerHTML=(VIEWS[route.tab]||VIEWS.inicio)();
   $$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===route.tab));
@@ -655,11 +669,11 @@ VIEWS.inicio=()=>{
   <h3 class="sec">¿Qué quieres hacer?</h3>
   ${quickGrid()}
   ${al.length?`<h3 class="sec">🔔 Avisos</h3><div class="alerts">${al.map(([t,m,b])=>`<div class="alert ${t}"><p>${m}</p>${b}</div>`).join('')}</div>`:''}
-  <h3 class="sec">Este mes en botellas</h3>
+  <h3 class="sec">Este mes en unidades</h3>
   <div class="kpis">
     ${kpi('🏭','Producidas',fmtNum(k.botProd,0),`${k.nLotes} lote(s)`,'wine')}
     ${kpi('🛍️','Vendidas',fmtNum(k.botVend,0),`${k.nPed} pedido(s)`,'info')}
-    ${kpi('🍾','Costo por botella',k.costoBot?money(k.costoBot):'—','Promedio de tus lotes','warn')}
+    ${kpi('🍾','Costo por unidad',k.costoBot?money(k.costoBot):'—','Promedio de tus lotes','warn')}
     ${kpi('🧾','Ticket promedio',k.ticket?money(k.ticket):'—','Lo que gasta un cliente','')}
   </div>
   <div class="card" style="margin-top:14px"><h3>Entró vs. salió (últimos 6 meses)</h3><p class="muted sm" style="margin:0 0 8px">Si la barra verde es más alta que la roja, ese mes ganaste.</p>
@@ -680,14 +694,14 @@ VIEWS.ventas=()=>{
 function vPedidos(){
   const P=DB.Pedidos;
   const cnt={todos:P.length,pend:P.filter(p=>p.estado==='Pendiente').length,cobrar:P.filter(p=>!p.pagado&&p.estado!=='Cancelado').length,entregados:P.filter(p=>p.estado==='Entregado').length,cancel:P.filter(p=>p.estado==='Cancelado').length};
-  return `${tip('Cada pedido <b>descuenta botellas</b> de tu stock. Cuando te paguen, márcalo como <b>Cobrado</b>: solo lo cobrado cuenta como plata que entró.')}
+  return `${tip('Cada pedido <b>descuenta productos</b> de tu stock. Cuando te paguen, márcalo como <b>Cobrado</b>: solo lo cobrado cuenta como plata que entró.')}
   <div class="toolbar"><input class="search" type="search" placeholder="🔍 Buscar N° de cliente o producto…" data-search="ped" value="${esc(route.q.ped)}"><button type="button" class="btn" data-act="newPedido">+ Nuevo</button></div>
   ${chips('fPed',[['todos',`Todos (${cnt.todos})`],['pend',`🕒 Por entregar (${cnt.pend})`],['cobrar',`⏳ Por cobrar (${cnt.cobrar})`],['entregados',`✅ Entregados (${cnt.entregados})`],['cancel',`❌ Cancelados (${cnt.cancel})`]],route.fPed)}
   <div id="list">${LISTS.ped()}</div>`;
 }
 const LISTS={};
 LISTS.ped=()=>{
-  if(!DB.Pedidos.length) return empty('🧾','Todavía no hay pedidos','Cuando un cliente te pida botellas, anótalo aquí. Así sabrás qué entregar y quién te debe.',`<button type="button" class="btn" data-act="newPedido">+ Anotar primer pedido</button>`);
+  if(!DB.Pedidos.length) return empty('🧾','Todavía no hay pedidos','Cuando un cliente te haga un pedido, anótalo aquí. Así sabrás qué entregar y quién te debe.',`<button type="button" class="btn" data-act="newPedido">+ Anotar primer pedido</button>`);
   const f=route.fPed, q=route.q.ped.toLowerCase().trim();
   let L=[...DB.Pedidos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));
   if(f==='pend') L=L.filter(p=>p.estado==='Pendiente');
@@ -699,7 +713,7 @@ LISTS.ped=()=>{
 };
 function badgeEstado(e){return {Pendiente:'<span class="badge info">🕒 Por entregar</span>',Entregado:'<span class="badge ok">✅ Entregado</span>',Cancelado:'<span class="badge bad">❌ Cancelado</span>'}[e]||''}
 function pedidoCard(p){
-  const items=(p.items||[]).map(it=>`${fmtNum(it.cantidad,0)} × ${esc(prodName(byId('Productos',it.productoId)))}`).join(', ');
+  const items=(p.items||[]).map(it=>`${fmtNum(it.cantidad,0)} ${esc(uLbl(it.productoId,num(it.cantidad)))} ${esc(prodName(byId('Productos',it.productoId)))}`).join(', ');
   const vivo=p.estado!=='Cancelado';
   return `<div class="item"><div class="item-top"><div><b data-act="verCliente" data-id="${p.clienteId}" style="cursor:pointer">${esc(cliLabel(p.clienteId))}</b><div class="muted sm">${fmtDate(p.fecha)} · ${items||'Sin productos'}</div></div><div class="amt">${money(p.total)}</div></div>
   <div class="badges">${badgeEstado(p.estado)}${vivo?(p.pagado?`<span class="badge ok">💵 Cobrado${p.metodoPago?' · '+esc(p.metodoPago):''}</span>`:'<span class="badge warn">⏳ Por cobrar</span>'):''}</div>
@@ -712,15 +726,25 @@ function pedidoCard(p){
   </div></div>`;
 }
 function vProductos(){
-  return `${tip('Aquí están las bebidas que vendes. La app calcula <b>cuánto te cuesta</b> cada botella (según tus producciones) y <b>cuánto ganas</b> al venderla.')}
+  const tipos=tiposProducto().filter(t=>DB.Productos.some(p=>p.tipo===t&&!p.oculto)), nOc=DB.Productos.filter(p=>p.oculto).length, f=route.fProd;
+  let L=DB.Productos.filter(p=>f==='ocultos'?p.oculto:!p.oculto&&(f==='todos'||p.tipo===f));
+  L.sort((a,b)=>a.tipo.localeCompare(b.tipo)||prodName(a).localeCompare(prodName(b)));
+  return `${tip('Aquí está todo lo que vendes: <b>líquidos, sólidos</b> o el tipo que crees. Cada producto tiene su precio, su unidad de venta y la app calcula <b>cuánto te cuesta</b> y <b>cuánto ganas</b>.')}
   <button type="button" class="btn block" data-act="newProducto">+ Nuevo producto</button>
-  ${DB.Productos.length?`<div class="list">${DB.Productos.map(p=>{
-    const st=stockProd(p.id), cb=costoBotella(p.id), g=p.precio-cb;
-    return `<div class="item"><div class="item-top"><div><b>${esc(p.nombre)}</b> <span class="muted">${esc(p.presentacion)}</span><div class="muted sm">Lo vendes a <b>${money(p.precio)}</b></div></div>
-      <div class="stock"><b class="${st<=0?'t-bad':st<10?'t-warn':'t-ok'}">${fmtNum(st,0)}</b><small>en stock</small></div></div>
-      <div class="minis"><div><small>Te cuesta</small><b>${cb?money(cb):'—'}</b></div><div><small>Ganas c/u</small><b class="${g>=0?'t-ok':'t-bad'}">${cb?money(g):'—'}</b></div><div><small>Margen</small><b>${cb&&p.precio?Math.round(g/p.precio*100)+'%':'—'}</b></div></div>
-      <div class="actions"><button type="button" class="btn sm" data-act="newLote" data-prod="${p.id}">🏭 Producir</button><button type="button" class="btn sm ghost" data-act="editProducto" data-id="${p.id}">Editar</button></div></div>`}).join('')}</div>`
-  :empty('🍾','Aún no tienes productos','Ejemplo: “El Látigo Clásico 750 ml” a S/ 35.',`<button type="button" class="btn" data-act="newProducto">+ Crear producto</button>`)}`;
+  ${DB.Productos.length>1||nOc?chips('fProd',[['todos',`Todos (${DB.Productos.filter(p=>!p.oculto).length})`],...tipos.map(t=>[t,`${tipoIcon(t)} ${t} (${DB.Productos.filter(p=>p.tipo===t&&!p.oculto).length})`]),...(nOc?[['ocultos',`🙈 Ocultos (${nOc})`]]:[])],f):''}
+  ${L.length?`<div class="list">${L.map(prodCard).join('')}</div>`
+  :DB.Productos.length?empty('🔍','Nada por aquí','No hay productos en este grupo.')
+  :empty('🍾','Aún no tienes productos','Ejemplo: “El Látigo Clásico” · Líquido · botella de 750 ml a S/ 35.',`<button type="button" class="btn" data-act="newProducto">+ Crear producto</button>`)}`;
+}
+function prodCard(p){
+  const st=stockProd(p.id), cb=costoBotella(p.id), g=p.precio-cb;
+  return `<div class="item"><div class="item-top"><div><b>${esc(p.nombre)}</b> <span class="muted">${esc(p.presentacion)}</span>
+      <div class="muted sm">Lo vendes a <b>${money(p.precio)}</b> por ${esc(p.unidad)}</div></div>
+    <div class="stock"><b class="${st<=0?'t-bad':st<10?'t-warn':'t-ok'}">${fmtNum(st,0)}</b><small>${esc(plural(p.unidad,st))}</small></div></div>
+    <div class="badges"><span class="badge info">${tipoIcon(p.tipo)} ${esc(p.tipo)}</span>${p.precioMayor>0&&p.minMayor>0?`<span class="badge gold">Por mayor: ${money(p.precioMayor)} desde ${fmtNum(p.minMayor,0)}</span>`:''}${p.oculto?'<span class="badge">🙈 Oculto</span>':''}</div>
+    ${p.caracteristicas?`<div class="muted sm" style="margin-top:4px">📝 ${esc(p.caracteristicas)}</div>`:''}
+    <div class="minis"><div><small>Te cuesta c/u</small><b>${cb?money(cb):'—'}</b></div><div><small>Ganas c/u</small><b class="${g>=0?'t-ok':'t-bad'}">${cb?money(g):'—'}</b></div><div><small>Margen</small><b>${cb&&p.precio?Math.round(g/p.precio*100)+'%':'—'}</b></div></div>
+    <div class="actions"><button type="button" class="btn sm" data-act="newLote" data-prod="${p.id}">🏭 Producir</button><button type="button" class="btn sm ghost" data-act="editProducto" data-id="${p.id}">Editar</button><button type="button" class="btn sm ghost" data-act="copyProducto" data-id="${p.id}">📄 Duplicar</button></div></div>`;
 }
 
 /* ===================== PRODUCCIÓN ===================== */
@@ -731,14 +755,14 @@ VIEWS.produccion=()=>{
 };
 function vLotes(){
   const L=[...DB.Produccion].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));
-  return `${tip('Un <b>lote</b> es cada vez que produces. Anota cuántas botellas salieron y qué insumos usaste: se descuentan del almacén y se calcula el <b>costo por botella</b>.')}
+  return `${tip('Un <b>lote</b> es cada vez que produces. Anota cuánto salió y qué insumos usaste: se descuentan del almacén y se calcula el <b>costo por unidad</b>.')}
   <button type="button" class="btn block" data-act="newLote">+ Registrar producción</button>
   ${L.length?`<div class="list">${L.map(l=>{const p=byId('Productos',l.productoId);
-    return `<div class="item"><div class="item-top"><div><b>${esc(prodName(p))}</b><div class="muted sm">${fmtDate(l.fecha)} · ${(l.consumos||[]).length} insumo(s)</div></div><div class="stock"><b>${fmtNum(l.botellas,0)}</b><small>botellas</small></div></div>
-    <div class="minis"><div><small>Costo del lote</small><b>${money(l.costoTotal)}</b></div><div><small>Por botella</small><b>${l.botellas?money(l.costoTotal/l.botellas):'—'}</b></div><div><small>Ganas c/u</small><b class="${p&&p.precio-l.costoTotal/(l.botellas||1)>=0?'t-ok':'t-bad'}">${p&&l.botellas?money(p.precio-l.costoTotal/l.botellas):'—'}</b></div></div>
+    return `<div class="item"><div class="item-top"><div><b>${esc(prodName(p))}</b><div class="muted sm">${fmtDate(l.fecha)} · ${(l.consumos||[]).length} insumo(s)</div></div><div class="stock"><b>${fmtNum(l.botellas,0)}</b><small>${esc(uLbl(l.productoId,l.botellas))}</small></div></div>
+    <div class="minis"><div><small>Costo del lote</small><b>${money(l.costoTotal)}</b></div><div><small>Costo c/u</small><b>${l.botellas?money(l.costoTotal/l.botellas):'—'}</b></div><div><small>Ganas c/u</small><b class="${p&&p.precio-l.costoTotal/(l.botellas||1)>=0?'t-ok':'t-bad'}">${p&&l.botellas?money(p.precio-l.costoTotal/l.botellas):'—'}</b></div></div>
     ${l.nota?`<div class="muted sm" style="margin-top:8px">📝 ${esc(l.nota)}</div>`:''}
     <div class="actions"><button type="button" class="btn sm ghost" data-act="editLote" data-id="${l.id}">Ver / editar</button></div></div>`}).join('')}</div>`
-  :empty('🏭','Sin producciones todavía','Registra tu primer lote para conocer cuánto te cuesta cada botella.')}`;
+  :empty('🏭','Sin producciones todavía','Registra tu primer lote para conocer cuánto te cuesta cada unidad.')}`;
 }
 function vInsumos(){
   const L=[...DB.Insumos].sort((a,b)=>a.nombre.localeCompare(b.nombre));
@@ -828,25 +852,26 @@ VIEWS.reportes=()=>{
     ${kpi('💸','Salió (costos)',money(k.costos),`Insumos ${moneyShort(k.compras)} · Gastos ${moneyShort(k.gastos+k.otros)}`,'bad')}
     ${kpi(k.ganancia>=0?'📈':'📉','Ganancia',money(k.ganancia),k.ingresos?`${Math.round(k.ganancia/k.ingresos*100)}% de lo cobrado`:'',k.ganancia>=0?'ok':'bad')}
     ${kpi('⏳','Por cobrar',money(k.porCobrar),`${k.nPorCobrar} pedido(s)`,'warn')}
-    ${kpi('🏭','Botellas producidas',fmtNum(k.botProd,0),`${k.nLotes} lote(s)`,'wine')}
-    ${kpi('🛍️','Botellas vendidas',fmtNum(k.botVend,0),`${k.nPed} pedido(s)`,'info')}
-    ${kpi('🍾','Costo por botella',k.costoBot?money(k.costoBot):'—','promedio','')}
+    ${kpi('🏭','Unidades producidas',fmtNum(k.botProd,0),`${k.nLotes} lote(s)`,'wine')}
+    ${kpi('🛍️','Unidades vendidas',fmtNum(k.botVend,0),`${k.nPed} pedido(s)`,'info')}
+    ${kpi('🍾','Costo por unidad',k.costoBot?money(k.costoBot):'—','promedio','')}
     ${kpi('🧾','Ticket promedio',k.ticket?money(k.ticket):'—','por pedido','')}
   </div>
   <div class="grid2" style="margin-top:14px">
     <div class="card"><h3>💵 Entró vs. salió por mes</h3>${chart('chIV',barCfg(s.labels,[{label:'Entró',data:s.ing,backgroundColor:'#2e7d4f'},{label:'Salió',data:s.cos,backgroundColor:'#c0392b'}],true))}</div>
-    <div class="card"><h3>🏭 Producción vs. ventas (botellas)</h3>${chart('chPV',lineCfg(s.labels,[{label:'Producidas',data:s.prod},{label:'Vendidas',data:s.vend,borderColor:PAL[1],pointBackgroundColor:PAL[1],backgroundColor:PAL[1]+'22'}]))}</div>
+    <div class="card"><h3>🏭 Producción vs. ventas (unidades)</h3>${chart('chPV',lineCfg(s.labels,[{label:'Producidas',data:s.prod},{label:'Vendidas',data:s.vend,borderColor:PAL[1],pointBackgroundColor:PAL[1],backgroundColor:PAL[1]+'22'}]))}</div>
     <div class="card"><h3>💸 ¿En qué se va la plata?</h3>${Object.keys(ct).length?chart('chCT',donutCfg(Object.keys(ct),Object.values(ct)),true):empty('💸','Sin costos en este periodo','')}</div>
+    ${(()=>{const vt={};vpk.forEach(id=>{const pr=byId('Productos',id);const t=pr?pr.tipo:'Otro';vt[t]=(vt[t]||0)+vp[id].t});const ks=Object.keys(vt);return ks.length>1?`<div class="card"><h3>🏷️ Ventas por tipo de producto</h3>${chart('chVT',donutCfg(ks.map(t=>tipoIcon(t)+' '+t),ks.map(t=>vt[t])),true)}</div>`:''})()}
     <div class="card"><h3>🍾 Ventas por producto</h3>${vpk.length?chart('chVP',donutCfg(vpk.map(id=>prodName(byId('Productos',id))),vpk.map(id=>vp[id].t)),true):empty('🍾','Sin ventas en este periodo','')}</div>
   </div>
   <div class="card"><h3>⭐ Clientes asiduos</h3><p class="muted sm" style="margin:0 0 8px">Ordenados por número de pedidos en el periodo.</p>
     ${top.length?`${chart('chTC',hbarCfg(top5.map(id=>cliShort(id)),top5.map(id=>st[id].total)))}
-    <div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>Cliente</th><th class="r">Pedidos</th><th class="r">Botellas</th><th class="r">Total</th><th>Último</th><th></th></tr></thead><tbody>
+    <div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>Cliente</th><th class="r">Pedidos</th><th class="r">Unidades</th><th class="r">Total</th><th>Último</th><th></th></tr></thead><tbody>
     ${top.map((id,i)=>{const x=st[id],n=cliNum(id);return `<tr><td><span class="rank">${i+1}</span></td><td><b data-act="verCliente" data-id="${id}" style="cursor:pointer">N° ${n}</b>${isReg(n)?' ✅':''}</td><td class="r">${x.n}</td><td class="r">${fmtNum(x.bot,0)}</td><td class="r"><b>${money(x.total)}</b></td><td>${fmtDate(x.ultimo)}</td><td></td></tr>`}).join('')}
     </tbody></table></div>`:empty('⭐','Sin pedidos en este periodo','')}
   </div>
   <div class="card"><h3>🏭 Costo de producción por producto</h3>
-    ${Object.keys(pp).length?`<div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Botellas</th><th class="r">Costo total</th><th class="r">Costo c/u</th><th class="r">Precio</th><th class="r">Ganas c/u</th></tr></thead><tbody>
+    ${Object.keys(pp).length?`<div class="tbl-wrap"><table><thead><tr><th>Producto</th><th class="r">Producido</th><th class="r">Costo total</th><th class="r">Costo c/u</th><th class="r">Precio</th><th class="r">Ganas c/u</th></tr></thead><tbody>
     ${Object.keys(pp).map(id=>{const pr=byId('Productos',id),o=pp[id],cu=o.b?o.c/o.b:0;return `<tr><td><b>${esc(prodName(pr))}</b></td><td class="r">${fmtNum(o.b,0)}</td><td class="r">${money(o.c)}</td><td class="r">${money(cu)}</td><td class="r">${pr?money(pr.precio):'—'}</td><td class="r ${pr&&pr.precio-cu>=0?'t-ok':'t-bad'}"><b>${pr?money(pr.precio-cu):'—'}</b></td></tr>`}).join('')}
     </tbody></table></div>`:empty('🏭','Sin producción en este periodo','')}
   </div>
@@ -896,12 +921,37 @@ function needFirst(msg,act,label){openSheet('Falta un pasito',empty('👣','Ante
 
 /* ===================== FORMULARIOS ===================== */
 function formProducto(p={}){
-  openSheet(p.id?'Editar producto':'🍾 Nuevo producto',`
+  const isNew=!p.id, tipos=tiposProducto(), tipo=p.tipo||'Líquido';
+  const upd=(e,f)=>{
+    const t=e&&e.target, el=f.elements;
+    $('#nuevoTipo').hidden=el.tipo.value!=='__nuevo';
+    if(t&&t.name==='tipo'&&!f.dataset.uniTocada){const tv=el.tipo.value==='__nuevo'?'':el.tipo.value;el.unidad.value=defUnidad(tv);el.presentacion.placeholder=tv==='Líquido'?'Ej: 750 ml':tv==='Sólido'?'Ej: 250 g':'Ej: tamaño o contenido'}
+    if(t&&t.name==='unidad') f.dataset.uniTocada=1;
+    const tp=el.tipo.value==='__nuevo'?(el.tipoNuevo.value.trim()||'Nuevo tipo'):el.tipo.value;
+    const nom=el.nombre.value.trim()||'Tu producto', pr=num(el.precio.value), pm=num(el.precioMayor.value), mm=num(el.minMayor.value);
+    $('#prevProd').innerHTML=`<div class="calc-row"><span>${tipoIcon(tp)} <b>${esc(nom)}</b> ${esc(el.presentacion.value)}</span><b>${money(pr)} / ${esc(el.unidad.value)}</b></div>${pm>0&&mm>0?`<div class="calc-row muted"><span>Por mayor, desde ${fmtNum(mm,0)} ${esc(plural(el.unidad.value,mm))}</span><b>${money(pm)} c/u</b></div>`:''}`;
+  };
+  openSheet(isNew?(p.nombre?'📄 Duplicar producto':'🍾 Nuevo producto'):'Editar producto',`
     ${field('Nombre del producto *',inp('nombre',p.nombre,'required placeholder="Ej: El Látigo Clásico"'))}
-    <div class="row2">${field('Presentación',inp('presentacion',p.presentacion,'placeholder="750 ml"'))}${field(`Precio de venta (${cfg.moneda}) *`,inp('precio',p.precio||'','type="number" step="0.01" min="0" inputmode="decimal" required placeholder="35.00"'))}</div>
-    <small class="muted">El costo de cada botella se calcula solo cuando registres tus producciones.</small>`,
-  {onSubmit:d=>{saveRow('Productos',Object.assign({},p,d,{id:p.id||uid(),creado:p.creado||today()}));toast(p.id?'Producto actualizado ✅':'Producto creado ✅');render()},
-   onDelete:p.id?()=>confirmDel('Productos',p.id,'este producto'):null});
+    <div class="row2">${field('Tipo',`<select name="tipo">${tipos.map(t=>`<option value="${esc(t)}" ${t===tipo?'selected':''}>${tipoIcon(t)} ${esc(t)}</option>`).join('')}<option value="__nuevo">➕ Crear otro tipo…</option></select>`)}${field('Se vende por',sel('unidad',unidadesVenta(),p.unidad||defUnidad(tipo)))}</div>
+    <div id="nuevoTipo" hidden>${field('Nombre del nuevo tipo *',inp('tipoNuevo','','placeholder="Ej: Polvo, Cápsulas, Combo, Merch…" autocomplete="off"'),'Quedará disponible para tus próximos productos.')}</div>
+    <div class="row2">${field('Presentación / contenido',inp('presentacion',p.presentacion,`placeholder="${tipo==='Sólido'?'Ej: 250 g':'Ej: 750 ml'}"`))}${field(`Precio de venta (${cfg.moneda}) *`,inp('precio',p.precio||'','type="number" step="0.01" min="0" inputmode="decimal" required placeholder="35.00"'))}</div>
+    <div class="subcard"><b>💰 Precio por mayor (opcional)</b>
+      <div class="row2">${field(`Precio c/u (${cfg.moneda})`,inp('precioMayor',p.precioMayor||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="32.00"'))}${field('Desde (cantidad)',inp('minMayor',p.minMayor||'','type="number" step="1" min="2" inputmode="numeric" placeholder="6"'))}</div>
+      <small class="muted" style="display:block;margin:-6px 0 10px">En los pedidos se aplica solo cuando piden esa cantidad o más.</small></div>
+    ${field('Características',`<textarea name="caracteristicas" rows="2" placeholder="Ej: sabor, grado de alcohol, ingredientes, modo de uso…">${esc(p.caracteristicas)}</textarea>`)}
+    ${!isNew?`<label class="check"><input type="checkbox" name="oculto" ${p.oculto?'checked':''}><span>🙈 Ocultar (ya no lo vendo; se guarda su historial)</span></label>`:''}
+    <div class="calc" id="prevProd"></div>
+    <small class="muted">El costo de cada unidad se calcula solo cuando registres tus producciones.</small>`,
+  {onOpen:f=>{delete f.dataset.uniTocada;if(!isNew)f.dataset.uniTocada=1;upd(null,f)},onInput:upd,
+   onSubmit:(d,f)=>{
+     let tipoF=d.tipo; if(tipoF==='__nuevo'){tipoF=(d.tipoNuevo||'').trim().replace(/\s+/g,' ');if(!tipoF){toast('Escribe el nombre del nuevo tipo','bad');f.elements.tipoNuevo.focus();return false}tipoF=tipoF[0].toUpperCase()+tipoF.slice(1)}
+     if(num(d.precioMayor)>0&&num(d.minMayor)<2){toast('Indica desde qué cantidad aplica el precio por mayor','bad');return false}
+     const row=Object.assign({},p,{nombre:d.nombre,tipo:tipoF,unidad:d.unidad,presentacion:d.presentacion,precio:d.precio,precioMayor:d.precioMayor,minMayor:d.minMayor,caracteristicas:d.caracteristicas,oculto:!!(f.elements.oculto&&f.elements.oculto.checked),id:p.id||uid(),creado:p.creado||today()});
+     saveRow('Productos',row);toast(isNew?`${tipoIcon(tipoF)} Producto creado ✅`:'Producto actualizado ✅');render()},
+   onDelete:p.id?()=>{const usado=DB.Pedidos.some(x=>(x.items||[]).some(i=>i.productoId===p.id))||DB.Produccion.some(x=>x.productoId===p.id);
+     if(usado){toast('Tiene ventas o producción registradas: mejor márcalo como “Ocultar”.','warn');return}
+     confirmDel('Productos',p.id,'este producto')}:null});
 }
 function formInsumo(i={}){
   openSheet(i.id?'Editar insumo':'📦 Nuevo insumo',`
@@ -937,16 +987,17 @@ function formLote(l={},preProd){
   const lines=(l.consumos&&l.consumos.length)?l.consumos:[{}];
   const upd=f=>{
     $$('.line.cons',f).forEach(r=>{const i=byId('Insumos',$('[data-role=ins]',r).value);$('[data-role=unit]',r).textContent=i?i.unidad:''});
-    const cons=readCons(f), ci=sum(cons,c=>c.cantidad*costoUnit(c.insumoId)), ot=num(f.elements.otrosCostos.value), b=num(f.elements.botellas.value), tot=ci+ot, p=byId('Productos',f.elements.productoId.value);
+    const cons=readCons(f), ci=sum(cons,c=>c.cantidad*costoUnit(c.insumoId)), ot=num(f.elements.otrosCostos.value), b=num(f.elements.botellas.value), tot=ci+ot, p=byId('Productos',f.elements.productoId.value), u=p?p.unidad:'unidad';
+    $('#lblCant').textContent=`¿Cuántas ${plural(u,2)} salieron? *`;
     const falta=cons.filter(c=>c.cantidad>stockIns(c.insumoId,l.id)).map(c=>{const i=byId('Insumos',c.insumoId);return `${esc(i.nombre)} (tienes ${fmtNum(stockIns(c.insumoId,l.id))} ${esc(i.unidad)})`});
     $('#lCalc').innerHTML=`<div class="calc-row"><span>Insumos usados</span><b>${money(ci)}</b></div><div class="calc-row"><span>Otros costos</span><b>${money(ot)}</b></div><div class="calc-row total"><span>Costo del lote</span><b>${money(tot)}</b></div>
-      ${b>0?`<div class="calc-row big"><span>Cada botella te cuesta</span><b>${money(tot/b)}</b></div>`:''}
-      ${b>0&&p&&p.precio?`<div class="calc-row"><span>Vendiéndola a ${money(p.precio)} ganas</span><b class="${p.precio-tot/b>=0?'t-ok':'t-bad'}">${money(p.precio-tot/b)} c/u</b></div>`:''}
+      ${b>0?`<div class="calc-row big"><span>Cada ${esc(u)} te cuesta</span><b>${money(tot/b)}</b></div>`:''}
+      ${b>0&&p&&p.precio?`<div class="calc-row"><span>Vendiendo a ${money(p.precio)} ganas</span><b class="${p.precio-tot/b>=0?'t-ok':'t-bad'}">${money(p.precio-tot/b)} c/u</b></div>`:''}
       ${falta.length?`<div class="warnbox">⚠️ No alcanza en el almacén: ${falta.join(', ')}. ¿Olvidaste registrar una compra?</div>`:''}`;
   };
   openSheet(l.id?'Editar producción':'🏭 Registrar producción',`
     <div class="row2">${field('Fecha',inp('fecha',l.fecha||today(),'type="date" required'))}${field('Producto *',`<select name="productoId" required>${prodOpts(l.productoId||preProd||(DB.Productos.length===1?DB.Productos[0].id:''),true)}</select>`)}</div>
-    ${field('¿Cuántas botellas salieron? *',inp('botellas',l.botellas||'','type="number" min="1" step="1" inputmode="numeric" required placeholder="Ej: 48"'))}
+    ${field('<span id="lblCant">¿Cuántas salieron? *</span>',inp('botellas',l.botellas||'','type="number" min="1" step="1" inputmode="numeric" required placeholder="Ej: 48"'))}
     <div class="lines-head"><b>¿Qué insumos usaste?</b><button type="button" class="btn sm ghost" data-act="copyReceta">📋 Copiar último lote</button></div>
     ${DB.Insumos.length?`<div class="lines" id="lines">${lines.map(consLine).join('')}</div><button type="button" class="btn sm ghost" data-act="addCons" style="margin-bottom:12px">+ Agregar insumo</button>`
       :`<div class="warnbox" style="margin-bottom:12px">Aún no tienes insumos en el almacén. Puedes guardar el lote igual, pero el costo solo incluirá “otros costos”.</div>`}
@@ -955,10 +1006,10 @@ function formLote(l={},preProd){
     <div class="calc" id="lCalc"></div>`,
   {onOpen:upd,onInput:(e,f)=>upd(f),
    onSubmit:(d,f)=>{const cons=readCons(f),ci=sum(cons,c=>c.cantidad*costoUnit(c.insumoId)),ot=num(d.otrosCostos);
-     if(num(d.botellas)<=0){toast('Indica cuántas botellas salieron','bad');return false}
+     if(num(d.botellas)<=0){toast('Indica cuánto salió de este lote','bad');return false}
      saveRow('Produccion',Object.assign({},l,d,{id:l.id||uid(),consumos:cons.map(c=>({insumoId:c.insumoId,cantidad:c.cantidad,costoUnit:+costoUnit(c.insumoId).toFixed(4)})),costoInsumos:+ci.toFixed(2),otrosCostos:ot,costoTotal:+(ci+ot).toFixed(2)}));
-     toast(l.id?'Producción actualizada ✅':`¡${fmtNum(d.botellas,0)} botellas al stock! 🍾`);render()},
-   onDelete:l.id?()=>confirmDel('Produccion',l.id,'este lote (las botellas saldrán del stock y los insumos volverán al almacén)'):null});
+     toast(l.id?'Producción actualizada ✅':`¡${fmtNum(d.botellas,0)} ${uLbl(d.productoId,num(d.botellas))} al stock! ${tipoIcon((byId('Productos',d.productoId)||{}).tipo)}`);render()},
+   onDelete:l.id?()=>confirmDel('Produccion',l.id,'este lote (lo producido saldrá del stock y los insumos volverán al almacén)'):null});
 }
 function pedLine(it={}){return `<div class="line ped"><select data-role="prod">${prodOpts(it.productoId,true)}</select><input data-role="qty" type="number" min="1" step="1" inputmode="numeric" value="${it.cantidad??1}"><input data-role="price" type="number" min="0" step="0.01" inputmode="decimal" value="${it.precio??''}" placeholder="0.00"><button type="button" class="icon-btn" data-act="rmLine" aria-label="Quitar">✕</button></div>`}
 function readPed(f){return $$('.line.ped',f).map(r=>({productoId:$('[data-role=prod]',r).value,cantidad:num($('[data-role=qty]',r).value),precio:num($('[data-role=price]',r).value)})).filter(x=>x.productoId&&x.cantidad>0)}
@@ -968,11 +1019,14 @@ function formPedido(p={},preCli){
   const cliOpts=[['','— Elige el N° de cliente —']];for(let n=1;n<=maxCli();n++) cliOpts.push([cliId(n),`N° ${n}${isReg(n)?'  ✓':''}`]);
   const upd=(e,f)=>{
     const t=e&&e.target;
-    if(t&&t.dataset.role==='prod'){const pr=byId('Productos',t.value),row=t.closest('.line');if(pr) $('[data-role=price]',row).value=pr.precio}
+    if(t&&t.dataset.role==='price') t.dataset.manual=1;
+    if(t&&(t.dataset.role==='prod'||t.dataset.role==='qty')){const row=t.closest('.line'),pi=$('[data-role=price]',row),pr=byId('Productos',$('[data-role=prod]',row).value);
+      if(t.dataset.role==='prod') delete pi.dataset.manual;
+      if(pr&&!pi.dataset.manual) pi.value=precioPara(pr,num($('[data-role=qty]',row).value));}
     const cn=cliNum(f.elements.clienteId.value); $('#regWrap').hidden=!cn||isReg(cn); $('#regN').textContent=cn||'';
     const its=readPed(f), tot=sum(its,i=>i.cantidad*i.precio);
     const falta=its.filter(i=>i.cantidad>stockProd(i.productoId,p.id)).map(i=>`${esc(prodName(byId('Productos',i.productoId)))} (hay ${fmtNum(stockProd(i.productoId,p.id),0)})`);
-    $('#pCalc').innerHTML=`<div class="calc-row big"><span>Total del pedido</span><b>${money(tot)}</b></div><div class="calc-row muted"><span>Botellas</span><span>${fmtNum(sum(its,i=>i.cantidad),0)}</span></div>${falta.length?`<div class="warnbox">⚠️ No alcanza el stock: ${falta.join(', ')}. Puedes guardarlo igual y producir después.</div>`:''}`;
+    $('#pCalc').innerHTML=`<div class="calc-row big"><span>Total del pedido</span><b>${money(tot)}</b></div><div class="calc-row muted"><span>Unidades</span><span>${fmtNum(sum(its,i=>i.cantidad),0)}</span></div>${its.some(i=>{const pr=byId('Productos',i.productoId);return pr&&pr.precioMayor>0&&i.precio===pr.precioMayor&&i.cantidad>=pr.minMayor})?'<div class="calc-row" style="color:var(--ok)"><span>💰 Se aplicó precio por mayor</span></div>':''}${falta.length?`<div class="warnbox">⚠️ No alcanza el stock: ${falta.join(', ')}. Puedes guardarlo igual y producir después.</div>`:''}`;
   };
   openSheet(p.id?'Editar pedido':'🧾 Nuevo pedido',`
     <div class="row2 stack">${field('Fecha',inp('fecha',p.fecha||today(),'type="date" required'))}${field('Cliente N° *',sel('clienteId',cliOpts,p.clienteId||preCli||'','required'))}</div>
@@ -1014,7 +1068,7 @@ function verCliente(id){
   openSheet(`Cliente N° ${n}`,`
     <label class="regbig ${reg?'on':''}"><span class="cbox"><input type="checkbox" data-reg="${n}" ${reg?'checked':''}><span></span></span><span>Registrado en mi cuaderno${act.length>=3?' <span class="badge gold">⭐ Frecuente</span>':''}</span></label>
     <div class="minis" style="margin:0 0 12px"><div><small>Pedidos</small><b>${act.length}</b></div><div><small>Compró</small><b>${money(sum(act,p=>p.total))}</b></div><div><small>Le falta pagar</small><b class="${deuda?'t-bad':''}">${money(deuda)}</b></div></div>
-    ${favId?`<div class="tip"><span>❤️</span><p>Su favorito: <b>${esc(prodName(byId('Productos',favId)))}</b> (${fmtNum(fav[favId],0)} botellas)</p></div>`:''}
+    ${favId?`<div class="tip"><span>❤️</span><p>Su favorito: <b>${esc(prodName(byId('Productos',favId)))}</b> (${fmtNum(fav[favId],0)} ${esc(uLbl(favId,fav[favId]))})</p></div>`:''}
     <button type="button" class="btn block" data-act="newPedido" data-cli="${id}">🧾 Nuevo pedido para el N° ${n}</button>
     <h4 style="margin:6px 0 8px;font-weight:900">Historial de pedidos</h4>
     ${ps.length?`<div class="list" style="grid-template-columns:1fr">${ps.map(pedidoCard).join('')}</div>`:'<p class="muted">Todavía no tiene pedidos.</p>'}`,
@@ -1051,9 +1105,9 @@ function ayuda(){
   openSheet('❓ ¿Cómo funciona?',`<div class="help"><img class="label-img" src="img/etiqueta.jpg" alt="Etiqueta de El Látigo">
     <p>Esta app lleva las cuentas de <b>El Látigo</b> por ti. Solo anota lo que pasa y ella calcula stock, costos y ganancias.</p>
     <h4>🔁 El ciclo del negocio</h4>
-    <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y suben las botellas.</li><li><b>Vendes en un pedido</b> 🧾 → bajan las botellas.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
+    <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y sube tu stock.</li><li><b>Vendes en un pedido</b> 🧾 → baja el stock.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
     <h4>📖 Palabras clave</h4>
-    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por botella:</b> lo que te costó el lote ÷ botellas que salieron.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
+    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
     <h4>📲 Tenla como app en tu celular</h4>
     <p>Toca <b>Instalar</b> (en Inicio o en ⚙️ Ajustes) y tendrás el ícono del burro en tu pantalla de inicio. Cuando haya mejoras, se actualiza sola: <b>no hace falta volver a instalar</b>.</p>
     <h4>🟢 El punto de arriba</h4>
@@ -1069,9 +1123,9 @@ function csv(name,rows){
 }
 const dec=n=>String(+(+n).toFixed(2)).replace('.',',');
 const CSVS={
-  clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° cliente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Botellas:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
+  clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° cliente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Unidades:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
   pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Cliente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Total:dec(p.total),Estado:p.estado,Cobrado:p.pagado?'Sí':'No','Forma de pago':p.metodoPago,'Dirección':p.direccionEntrega})),
-  produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Botellas:l.botellas,'Costo insumos':dec(l.costoInsumos),'Otros costos':dec(l.otrosCostos),'Costo total':dec(l.costoTotal),'Costo por botella':dec(l.botellas?l.costoTotal/l.botellas:0),Nota:l.nota})),
+  produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Tipo:(byId('Productos',l.productoId)||{}).tipo||'',Cantidad:l.botellas,Unidad:(byId('Productos',l.productoId)||{}).unidad||'','Costo insumos':dec(l.costoInsumos),'Otros costos':dec(l.otrosCostos),'Costo total':dec(l.costoTotal),'Costo por unidad':dec(l.botellas?l.costoTotal/l.botellas:0),Nota:l.nota})),
   costos:()=>[...DB.Compras.map(c=>{const i=byId('Insumos',c.insumoId);return {Fecha:c.fecha,Tipo:'Compra de insumo',Detalle:`${c.cantidad} ${i?i.unidad:''} ${i?i.nombre:''}`.trim(),Monto:dec(c.costoTotal)}}),
     ...DB.Gastos.map(g=>({Fecha:g.fecha,Tipo:g.categoria,Detalle:g.descripcion,Monto:dec(g.monto)})),
     ...DB.Produccion.filter(l=>l.otrosCostos).map(l=>({Fecha:l.fecha,Tipo:'Otros costos de producción',Detalle:prodName(byId('Productos',l.productoId)),Monto:dec(l.otrosCostos)}))].sort((a,b)=>a.Fecha.localeCompare(b.Fecha)),
@@ -1094,6 +1148,8 @@ const ACT={
   help:()=>ayuda(),
   settings:()=>formAjustes(),
   newProducto:()=>formProducto(), editProducto:d=>formProducto(byId('Productos',d.id)),
+  copyProducto:d=>{const p=byId('Productos',d.id);formProducto(Object.assign({},p,{id:'',creado:'',oculto:false,nombre:p.nombre+' (copia)'}))},
+  fProd:d=>{route.fProd=d.val;render()},
   newInsumo:()=>formInsumo(), editInsumo:d=>formInsumo(byId('Insumos',d.id)),
   newCompra:d=>formCompra({},d.ins), editCompra:d=>formCompra(byId('Compras',d.id)),
   newLote:d=>formLote({},d.prod), editLote:d=>formLote(byId('Produccion',d.id)),
@@ -1114,7 +1170,7 @@ const ACT={
     const k=last.botellas?b/last.botellas:1;
     if($('#lines')) $('#lines').innerHTML=last.consumos.map(c=>consLine({insumoId:c.insumoId,cantidad:+(num(c.cantidad)*k).toFixed(3)})).join('');
     if(!num(f.elements.otrosCostos.value)&&last.otrosCostos) f.elements.otrosCostos.value=+(last.otrosCostos*k).toFixed(2);
-    SH.onInput(null,f); toast(`Receta copiada y ajustada a ${fmtNum(b,0)} botellas 📋`);
+    SH.onInput(null,f); toast(`Receta copiada y ajustada a ${fmtNum(b,0)} ${uLbl(pid,b)} 📋`);
   },
   csv:d=>csv(d.t,CSVS[d.t]()),
   testConn:async()=>{try{const j=await api({action:'ping'});toast('✅ '+(j.msg||'Conexión correcta'))}catch(e){toast('❌ '+e.message,'bad')}},
@@ -1164,18 +1220,22 @@ function demoData(){
   let seed=11; const rnd=()=>(seed=seed*16807%2147483647)/2147483647, ri=(a,b)=>a+Math.floor(rnd()*(b-a+1)), pick=a=>a[Math.floor(rnd()*a.length)];
   const d=emptyDB(), now=new Date(), T=today();
   const dia=(mb,dd)=>{const x=new Date(now.getFullYear(),now.getMonth()-mb,dd);const s=isoD(x);return s>T?T:s};
-  d.Productos=[{id:'p1',nombre:'El Látigo Clásico',presentacion:'750 ml',precio:35,creado:dia(5,1)},{id:'p2',nombre:'Látigo de Fresa',presentacion:'750 ml',precio:40,creado:dia(5,1)},{id:'p3',nombre:'Latiguito',presentacion:'250 ml',precio:15,creado:dia(5,1)}];
-  d.Insumos=[['i1','Aguardiente de caña','L','Materia prima',20,15,9],['i2','Azúcar rubia','kg','Materia prima',8,4,4.5],['i3','Fresa','kg','Materia prima',5,2,8],['i4','Botella 750 ml','unidad','Envases',75,30,1.8],['i5','Botella 250 ml','unidad','Envases',20,20,1],['i6','Tapa rosca','unidad','Envases',100,50,.3],['i7','Etiqueta','unidad','Etiquetas y empaques',50,50,.5]]
+  d.Productos=[
+    {id:'p1',nombre:'El Látigo Clásico',tipo:'Líquido',unidad:'botella',presentacion:'750 ml',precio:35,precioMayor:32,minMayor:6,caracteristicas:'Aguardiente de caña macerado. 30° de alcohol.',creado:dia(5,1)},
+    {id:'p2',nombre:'Látigo de Fresa',tipo:'Líquido',unidad:'botella',presentacion:'750 ml',precio:40,caracteristicas:'Macerado de fresa natural, 15 días.',creado:dia(5,1)},
+    {id:'p3',nombre:'Latiguito',tipo:'Líquido',unidad:'botella',presentacion:'250 ml',precio:15,caracteristicas:'Tamaño de bolsillo.',creado:dia(5,1)},
+    {id:'p4',nombre:'Látigo en Polvo',tipo:'Sólido',unidad:'bolsa',presentacion:'100 g',precio:18,precioMayor:15,minMayor:10,caracteristicas:'Maca negra en polvo. Disolver 1 cucharada en agua o jugo.',creado:dia(5,1)}];
+  d.Insumos=[['i1','Aguardiente de caña','L','Materia prima',20,15,9],['i2','Azúcar rubia','kg','Materia prima',8,4,4.5],['i3','Fresa','kg','Materia prima',5,2,8],['i4','Botella 750 ml','unidad','Envases',75,30,1.8],['i5','Botella 250 ml','unidad','Envases',20,20,1],['i6','Tapa rosca','unidad','Envases',100,50,.3],['i7','Etiqueta','unidad','Etiquetas y empaques',50,50,.5],['i8','Maca negra en polvo','kg','Materia prima',2,1,38],['i9','Bolsa doypack','unidad','Etiquetas y empaques',40,20,.6]]
     .map(([id,nombre,unidad,categoria,stockInicial,stockMinimo,costoRef])=>({id,nombre,unidad,categoria,stockInicial,stockMinimo,costoRef,creado:dia(5,1)}));
-  const prov={i1:'Destilería Cañete',i2:'Mercado Central',i3:'Mercado Central',i4:'Envases del Sur',i5:'Envases del Sur',i6:'Envases del Sur',i7:'Imprenta Rápida'};
-  const pu={i1:[8.5,9.6],i2:[4.2,4.8],i3:[6.5,9],i4:[1.7,1.95],i5:[.9,1.1],i6:[.25,.32],i7:[.45,.55]};
-  const R={p1:[['i1',.6],['i2',.08],['i4',1],['i6',1],['i7',1]],p2:[['i1',.55],['i2',.1],['i3',.15],['i4',1],['i6',1],['i7',1]],p3:[['i1',.2],['i2',.03],['i5',1],['i6',1],['i7',1]]};
+  const prov={i1:'Destilería Cañete',i2:'Mercado Central',i3:'Mercado Central',i4:'Envases del Sur',i5:'Envases del Sur',i6:'Envases del Sur',i7:'Imprenta Rápida',i8:'Mercado Central',i9:'Envases del Sur'};
+  const pu={i1:[8.5,9.6],i2:[4.2,4.8],i3:[6.5,9],i4:[1.7,1.95],i5:[.9,1.1],i6:[.25,.32],i7:[.45,.55],i8:[36,40],i9:[.55,.65]};
+  const R={p1:[['i1',.6],['i2',.08],['i4',1],['i6',1],['i7',1]],p2:[['i1',.55],['i2',.1],['i3',.15],['i4',1],['i6',1],['i7',1]],p3:[['i1',.2],['i2',.03],['i5',1],['i6',1],['i7',1]],p4:[['i8',.1],['i9',1],['i7',1]]};
   const cu={}; d.Insumos.forEach(i=>cu[i.id]=i.costoRef);
   for(let mb=5;mb>=0;mb--){
-    const buy={i1:ri(48,56),i2:ri(8,9),i3:ri(4,5),i4:ri(75,85),i5:ri(28,34),i6:ri(105,115),i7:ri(105,115)};
-    if(mb===0){Object.keys(buy).forEach(k=>{if(k!=='i1'&&k!=='i7')delete buy[k]});buy.i1=ri(22,28);buy.i7=ri(50,60)}
+    const buy={i1:ri(48,56),i2:ri(8,9),i3:ri(4,5),i4:ri(75,85),i5:ri(28,34),i6:ri(105,115),i7:ri(135,145),i8:ri(3,4),i9:ri(28,32)};
+    if(mb===0){Object.keys(buy).forEach(k=>{if(k!=='i1'&&k!=='i7')delete buy[k]});buy.i1=ri(22,28);buy.i7=ri(70,80)}
     Object.entries(buy).forEach(([id,q],k)=>{const p=+(pu[id][0]+rnd()*(pu[id][1]-pu[id][0])).toFixed(2);cu[id]=p;d.Compras.push({id:`c${mb}${k}`,fecha:dia(mb,ri(1,4)),insumoId:id,cantidad:q,costoTotal:+(q*p).toFixed(2),proveedor:prov[id],nota:''})});
-    [['p1',ri(42,50)],['p2',ri(24,30)],['p3',ri(28,32)]].forEach(([pid,b],k)=>{
+    [['p1',ri(42,50)],['p2',ri(24,30)],['p3',ri(28,32)],['p4',ri(25,30)]].forEach(([pid,b],k)=>{
       if(mb===0&&pid==='p3') return;
       const cons=R[pid].map(([iid,q])=>({insumoId:iid,cantidad:+(q*b).toFixed(2),costoUnit:cu[iid]}));
       const ci=sum(cons,c=>c.cantidad*c.costoUnit), ot=ri(25,45);
@@ -1192,8 +1252,8 @@ function demoData(){
     const np=mb===0?ri(6,7):ri(9,12);
     for(let j=0;j<np;j++){
       const cid=pick(peso), its=[], used={};
-      for(let x=0;x<ri(1,2);x++){const pid=pick(['p1','p1','p1','p2','p2','p3']);if(used[pid])continue;used[pid]=1;const pr=d.Productos.find(p=>p.id===pid);
-        const q=cid==='n7'||cid==='n12'||mb===0?ri(4,8):ri(1,3);its.push({productoId:pid,cantidad:q,precio:q>=6?pr.precio-3:pr.precio})}
+      for(let x=0;x<ri(1,2);x++){const pid=pick(['p1','p1','p1','p2','p2','p3','p4','p4']);if(used[pid])continue;used[pid]=1;const pr=d.Productos.find(p=>p.id===pid);
+        const q=cid==='n7'||cid==='n12'||mb===0?ri(4,8):ri(1,3);its.push({productoId:pid,cantidad:q,precio:precioPara(pr,q)})}
       const f=dia(mb,ri(10,28)), reciente=mb===0&&j>=np-3;
       d.Pedidos.push({id:'pd'+(n++),fecha:f,clienteId:cid,items:its,total:sum(its,i=>i.cantidad*i.precio),estado:reciente&&j===np-1?'Pendiente':(rnd()<.03?'Cancelado':'Entregado'),pagado:!(reciente&&j>=np-2),metodoPago:reciente&&j>=np-2?'':pick(['Yape','Yape','Plin','Efectivo','Transferencia']),direccionEntrega:'',nota:''});
     }
