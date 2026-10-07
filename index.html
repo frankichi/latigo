@@ -288,6 +288,20 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 .row3>.field{min-width:0}
 .row3 .field>span{font-size:.8rem}
 .envhint{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--gold-soft);border-radius:10px;padding:7px 10px;font-size:.82rem;margin:-2px 0 10px}
+.adj{background:#fff;border:1.5px dashed #cdbba3;border-radius:14px;padding:10px 12px;margin:4px 0 12px}
+.adj-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.adj-h b{font-size:.9rem}
+.adj-list{display:flex;gap:8px;flex-wrap:wrap}
+.adj-list:empty{display:none}
+.adj-it{position:relative;width:64px;height:64px;border-radius:10px;overflow:hidden;border:1.5px solid var(--line);background:#f8f0e4;display:grid;place-items:center;text-decoration:none;color:var(--ink);font-size:1.5rem;flex:none}
+.adj-it img{width:100%;height:100%;object-fit:cover;display:block}
+.adj-it .st{position:absolute;left:0;right:0;bottom:0;font-size:.58rem;font-weight:900;text-align:center;background:rgba(0,0,0,.6);color:#fff;padding:1px 0}
+.adj-it .x{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:0;background:rgba(0,0,0,.65);color:#fff;font-size:.7rem;font-weight:900;cursor:pointer;display:grid;place-items:center;padding:0}
+.adj .btn-row{margin:8px 0 4px}
+.bol{display:flex;gap:12px;align-items:flex-start}
+.bol .adj-it{width:72px;height:72px}
+.bol>div:last-child{flex:1;min-width:0}
+a.badge{text-decoration:none}
 .install{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--gold);border-radius:var(--r);padding:12px;margin-bottom:14px;box-shadow:var(--shadow)}
 .install img{width:52px;height:52px;border-radius:12px;flex:none}
 .install>div{flex:1;min-width:0}
@@ -365,7 +379,7 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '1.8.0';
+const APP_VERSION = '1.9.1';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
@@ -374,11 +388,12 @@ const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(d
 const SCHEMA = {
   Productos:  {f:['id','nombre','tipo','unidad','presentacion','precio','precioMayor','minMayor','caracteristicas','oculto','creado'], num:['precio','precioMayor','minMayor'], bool:['oculto']},
   Insumos:    {f:['id','nombre','unidad','categoria','stockInicial','stockMinimo','costoRef','creado'], num:['stockInicial','stockMinimo','costoRef']},
-  Compras:    {f:['id','fecha','insumoId','cantidad','costoTotal','proveedor','nota'], num:['cantidad','costoTotal']},
+  Compras:    {f:['id','fecha','insumoId','cantidad','costoTotal','proveedor','nota','comprobanteUrl'], num:['cantidad','costoTotal']},
   Produccion: {f:['id','fecha','productoId','botellas','consumos','costoInsumos','costoLab','otrosCostos','costoTotal','nota'], num:['botellas','costoInsumos','costoLab','otrosCostos','costoTotal'], json:['consumos']},
   Clientes:   {f:['id','numero','registrado','zonaTipo','zona','nota','creado'], num:['numero'], bool:['registrado']},
-  Pedidos:    {f:['id','fecha','clienteId','items','subtotal','total','estado','pagado','metodoPago','zonaTipo','zona','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','direccionEntrega','nota'], num:['subtotal','total','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio'], json:['items'], bool:['pagado']},
-  Gastos:     {f:['id','fecha','categoria','descripcion','monto','quincena'], num:['monto']},
+  Pedidos:    {f:['id','fecha','clienteId','items','subtotal','total','estado','pagado','metodoPago','zonaTipo','zona','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','direccionEntrega','nota','comprobanteEnvioUrl'], num:['subtotal','total','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio'], json:['items'], bool:['pagado']},
+  Gastos:     {f:['id','fecha','categoria','descripcion','monto','quincena','comprobanteUrl'], num:['monto']},
+  Comprobantes:{f:['id','fecha','tipo','monto','proveedor','nota','refTipo','refId','referencia','url','thumbUrl','deleteUrl','creado'], num:['monto']},
 };
 const UNIDADES = ['L','ml','kg','g','unidad','caja','paquete'];
 const INS_CATS = ['Materia prima','Envases','Etiquetas y empaques','Otros'];
@@ -443,6 +458,104 @@ function labShare(l){const k=qKey(l.fecha),pago=labPagoQ(k);if(!pago||!l.botella
 const labLote=l=>num(l.costoLab)+labShare(l);           // costoLab = registros antiguos
 const costoLote=l=>num(l.costoTotal)+labShare(l);
 function ultimoLabPago(exceptId){return [...labPagos()].filter(g=>g.id!==exceptId).sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id))[0]||null}
+/* ===== BOLETAS / COMPROBANTES: la imagen se sube a ImgBB (vía Apps Script) y en la hoja queda solo el LINK. Nada en Google Drive. ===== */
+const COMP_TIPOS=[['Compra de insumos','🛒'],['Producción (elementos/servicios)','🏭'],['Envío','🚚'],['Otro','📄']];
+const compIcon=t=>(COMP_TIPOS.find(x=>x[0]===t)||[0,'📄'])[1];
+const UPQ_KEY='latigo_upq_v1';
+let UPQ=load(UPQ_KEY,[]).filter(q=>/^image\//.test(q.mime||'')), upBusy=false, upErr='';
+const saveUPQ=()=>store(UPQ_KEY,UPQ);
+const compsDe=(rt,id)=>DB.Comprobantes.filter(c=>c.refTipo===rt&&c.refId===id);
+const pendDe=(rt,id)=>UPQ.filter(q=>q.refTipo===rt&&q.refId===id);
+const tieneComp=(rt,id)=>compsDe(rt,id).length+pendDe(rt,id).length>0;
+const isImgMime=m=>/^image\//.test(m||'');
+function refText(rt,id){
+  const r=id&&byId(rt,id); if(!r) return '';
+  if(rt==='Compras'){const i=byId('Insumos',r.insumoId);return `Compra · ${i?i.nombre:'insumo'} · ${fmtNum(r.cantidad)} ${i?i.unidad:''} · ${fmtDate(r.fecha)}`}
+  if(rt==='Gastos') return r.categoria===LAB?`Laboratorista · quincena ${qLabel(qDe(r))}`:`Gasto · ${r.categoria}${r.descripcion?' · '+r.descripcion:''} · ${fmtDate(r.fecha)}`;
+  if(rt==='Pedidos') return `Envío · Pedido ${cliShort(r.clienteId)} → ${zonaTxt(r)||'sin destino'} · ${fmtDate(r.fecha)}`;
+  if(rt==='Produccion') return `Lote · ${prodName(byId('Productos',r.productoId))} · ${fmtDate(r.fecha)}`;
+  return '';
+}
+function compBadge(rt,id,si,no){const c=compsDe(rt,id),pq=pendDe(rt,id);if(c.length===1)return ` <a class="badge ok" href="${esc(c[0].url)}" target="_blank" rel="noopener">📎 ${si}</a>`;if(c.length)return ` <span class="badge ok">📎 ${c.length} ${si.toLowerCase()}s</span>`;if(pq.length)return ' <span class="badge info">⏳ Subiendo boleta</span>';return ` <span class="badge ${no.includes('⚠')?'warn':''}">${no}</span>`}
+const refAct={Compras:'editCompra',Gastos:'editGasto',Pedidos:'editPedido',Produccion:'editLote'};
+function compThumb(c,big){
+  if(c._pend) return `<span class="adj-it"><img src="${c.data}" alt=""><span class="st">⏳ subiendo</span></span>`;
+  const src=c.thumbUrl||c.url;
+  return `<a class="adj-it" href="${esc(c.url)}" target="_blank" rel="noopener" title="Ver boleta">${src?`<img src="${esc(src)}" alt="" loading="lazy" onerror="this.outerHTML='🖼️'">`:'🖼️'}</a>`;
+}
+/* Caja para adjuntar dentro de un formulario. Los archivos se suben al GUARDAR. */
+function adjuntosBox(rt,id,label){
+  const ya=id?[...compsDe(rt,id),...pendDe(rt,id).map(q=>Object.assign({_pend:1},q))]:[];
+  return `<div class="adj"><div class="adj-h"><b>📎 ${label}</b><span class="muted sm">${ya.length?ya.length+' adjunto(s)':''}</span></div>
+    <div class="adj-list" id="adjList">${ya.map(c=>compThumb(c)).join('')}</div>
+    <div class="btn-row"><label class="btn sm ghost">📷 Tomar foto<input type="file" accept="image/*" capture="environment" data-adj hidden></label><label class="btn sm ghost">📁 Foto o PDF<input type="file" accept="image/*,application/pdf" multiple data-adj hidden></label></div>
+    <small class="muted">Se convierte en un link (ImgBB) y en la hoja queda solo el link. Los PDF se pasan a imagen.</small></div>`;
+}
+function renderAdjNuevos(){
+  const L=$('#adjList'); if(!L||!SH) return;
+  $$('.adj-it.nuevo',L).forEach(x=>x.remove());
+  L.insertAdjacentHTML('beforeend',(SH.adj||[]).map((a,i)=>`<span class="adj-it nuevo"><img src="${a.data}" alt=""><span class="st">${a.pages>1?a.pages+' pág.':'nuevo'}</span><button type="button" class="x" data-act="rmAdj" data-i="${i}" aria-label="Quitar">✕</button></span>`).join(''));
+}
+/* Todo se convierte a JPEG liviano antes de subir. Los PDF (escaneos) se pasan a imagen con pdf.js. */
+const PDFJS_V='3.11.174', PDFJS_CDN=`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_V}/`;
+let pdfjsP=null;
+function cargarPdfJs(){
+  if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return pdfjsP||(pdfjsP=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src=PDFJS_CDN+'pdf.min.js';
+    sc.onload=()=>{try{window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS_CDN+'pdf.worker.min.js';res(window.pdfjsLib)}catch(e){rej(e)}};
+    sc.onerror=()=>{pdfjsP=null;rej(new Error('Necesitas internet para leer el PDF'))};document.head.appendChild(sc)}));
+}
+function canvasAJpeg(c,maxLado){
+  const k=Math.min(1,maxLado/Math.max(c.width,c.height));
+  if(k<1){const o=document.createElement('canvas');o.width=Math.round(c.width*k);o.height=Math.round(c.height*k);const x=o.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,o.width,o.height);x.drawImage(c,0,0,o.width,o.height);c=o}
+  return c.toDataURL('image/jpeg',.8);
+}
+async function pdfAImagen(file){
+  const lib=await cargarPdfJs(), pdf=await lib.getDocument({data:await file.arrayBuffer()}).promise;
+  const n=Math.min(pdf.numPages,6), pages=[];
+  for(let i=1;i<=n;i++){const pg=await pdf.getPage(i),v0=pg.getViewport({scale:1}),sc=1300/v0.width,v=pg.getViewport({scale:sc});
+    const c=document.createElement('canvas');c.width=Math.round(v.width);c.height=Math.round(v.height);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+    await pg.render({canvasContext:x,viewport:v}).promise;pages.push(c)}
+  const W=Math.max(...pages.map(c=>c.width)),gap=pages.length>1?16:0,H=pages.reduce((a,c)=>a+c.height,0)+gap*(pages.length-1);
+  const all=document.createElement('canvas');all.width=W;all.height=H;const x=all.getContext('2d');x.fillStyle='#d9d2c5';x.fillRect(0,0,W,H);
+  let y=0;pages.forEach(c=>{x.drawImage(c,0,y);y+=c.height+gap});
+  if(pdf.numPages>n) toast(`El PDF tiene ${pdf.numPages} páginas: se guardan las primeras ${n}`,'warn');
+  return {name:file.name.replace(/\.pdf$/i,'')+'.jpg',mime:'image/jpeg',data:canvasAJpeg(all,6000),pages:n};
+}
+async function prepararArchivo(file){
+  const pdf=file.type==='application/pdf'||/\.pdf$/i.test(file.name);
+  const img=!pdf&&(/^image\//.test(file.type)||/\.(heic|heif|jpe?g|png|webp|gif|bmp)$/i.test(file.name));
+  if(!pdf&&!img) throw new Error('Solo se aceptan fotos o PDF');
+  if(file.size>25*1024*1024) throw new Error('El archivo pesa más de 25 MB');
+  if(pdf){toast('Convirtiendo el PDF a imagen…');return pdfAImagen(file)}
+  const url=URL.createObjectURL(file);
+  try{
+    const im=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('No se pudo leer la foto. Prueba con otra o toma la foto desde la app.'));i.src=url});
+    const c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0);
+    return {name:file.name.replace(/\.[^.]+$/,'')+'.jpg',mime:'image/jpeg',data:canvasAJpeg(c,1600)};
+  }finally{URL.revokeObjectURL(url)}
+}
+/* Pasa los adjuntos del formulario a la cola de subida (se sube aunque se cierre el formulario) */
+function encolarAdj(meta){
+  const L=(SH&&SH.adj)||[]; if(!L.length) return 0;
+  L.forEach(a=>UPQ.push(Object.assign({id:uid(),name:a.name,mime:a.mime,data:a.data,creado:today()},meta)));
+  SH.adj=[]; saveUPQ(); setTimeout(processUploads,60); return L.length;
+}
+async function processUploads(){
+  if(upBusy||!UPQ.length||!cfg.apiUrl) return; upBusy=true; let ok=0;
+  try{
+    while(UPQ.length){
+      const it=UPQ[0];
+      const r=await api({action:'upload',nombre:it.name,mime:it.mime,data:it.data,tipo:it.tipo,fecha:it.fecha,referencia:it.referencia});
+      saveRow('Comprobantes',{id:it.id,fecha:it.fecha,tipo:it.tipo,monto:it.monto,proveedor:it.proveedor,nota:it.nota,refTipo:it.refTipo||'',refId:it.refId||'',referencia:it.referencia||'',url:r.url,thumbUrl:r.thumbUrl||'',deleteUrl:r.deleteUrl||'',creado:it.creado||today()});
+      const campo=it.refTipo==='Pedidos'?'comprobanteEnvioUrl':(it.refTipo==='Compras'||it.refTipo==='Gastos')?'comprobanteUrl':'';
+      const ref=campo&&it.refId&&byId(it.refTipo,it.refId); if(ref) saveRow(it.refTipo,Object.assign({},ref,{[campo]:r.url}));
+      UPQ=UPQ.filter(x=>x.id!==it.id); saveUPQ(); ok++;
+    }
+    if(ok) toast(ok>1?`📎 ${ok} boletas guardadas ✅ (link en la hoja)`:'📎 Boleta guardada ✅ (link en la hoja)');
+  }catch(e){ upErr=e.message||''; toast(/imgbb|key|clave|setup|permiso|authoriz|imagen/i.test(upErr)?'📎 No se pudo subir la boleta: '+upErr:'📎 Sin conexión: la boleta se subirá sola cuando vuelva el internet','warn') }
+  finally{ upBusy=false; render() }
+}
 const envioCosto=p=>num(p.costoEnvio)+num(p.costoEmbalaje)+num(p.costoFlete);
 const zonaTxt=p=>p.zonaTipo==='Recojo'?'Recoge el cliente':p.zona?`${p.zona}${p.zonaTipo==='Provincia'?' (provincia)':''}`:'';
 function zonasUsadas(tipo){const o=new Set();DB.Pedidos.forEach(p=>{if(p.zona&&p.zonaTipo===tipo)o.add(p.zona)});DB.Clientes.forEach(c=>{if(c.zona&&c.zonaTipo===tipo)o.add(c.zona)});return [...o]}
@@ -517,7 +630,7 @@ async function syncAll(showMsg){
   try{
     await flushOutbox();
     const j=await api({action:'all'});
-    DB=normalizeDB(j.data); store(DB_KEY,DB); setSync('ok'); render();
+    DB=normalizeDB(j.data); store(DB_KEY,DB); setSync('ok'); render(); processUploads();
     if(showMsg) toast('Datos actualizados ✅');
   }catch(e){ setSync('err');
     if(/clave|setup/i.test(e.message)) toast('La base de datos aún no está lista. Avísale a quien instaló la app.','bad');
@@ -605,6 +718,7 @@ function alertas(){
   if(labPagos().length){const ant=qPrev(qKey(today()));if(!labPagoQ(ant)) a.push(['warn',`Falta registrar el pago del <b>laboratorista</b> de la quincena ${qLabel(ant)}`,`<button class="btn sm gold" data-act="newLab">🧪 Registrar</button>`])}
   DB.Insumos.forEach(i=>{const s=stockIns(i.id); if(i.stockMinimo>0&&s<=i.stockMinimo) a.push([s<=0?'bad':'warn',`${s<=0?'Se acabó':'Queda poco'} <b>${esc(i.nombre)}</b>: ${fmtNum(s)} ${esc(i.unidad)} (mínimo ${fmtNum(i.stockMinimo)})`,`<button class="btn sm gold" data-act="newCompra" data-ins="${i.id}">🛒 Comprar</button>`])});
   if(DB.Produccion.length) DB.Productos.forEach(p=>{const s=stockProd(p.id); if(s<=0) a.push(['bad',`Sin stock de <b>${esc(prodName(p))}</b> (${fmtNum(s,0)} ${esc(plural(p.unidad,s))})`,`<button class="btn sm" data-act="newLote" data-prod="${p.id}">🏭 Producir</button>`])});
+  {const fal=faltantes().all.length; if(fal) a.push(['warn',`Hay <b>${fal}</b> compra(s) o envío(s) de los últimos 30 días sin boleta`,`<button class="btn sm ghost" data-act="verFaltan">📎 Ver</button>`]);}
   const pend=DB.Pedidos.filter(p=>p.estado==='Pendiente');
   if(pend.length) a.push(['info',`Tienes <b>${pend.length}</b> pedido(s) por entregar`,`<button class="btn sm ghost" data-act="goPed" data-f="pend">Ver</button>`]);
   const cob=DB.Pedidos.filter(p=>!p.pagado&&p.estado!=='Cancelado');
@@ -712,7 +826,7 @@ VIEWS.inicio=()=>{
   `;
 };
 function quickGrid(){
-  return `<div class="quick">${[['newPedido','🧾','Nuevo pedido'],['newLote','🏭','Registrar producción'],['newCompra','🛒','Compré insumos'],['newGasto','💸','Anotar un gasto'],['goClientes','👥','Mis clientes'],['goReportes','📊','Ver reportes']]
+  return `<div class="quick">${[['newPedido','🧾','Nuevo pedido'],['newLote','🏭','Registrar producción'],['newCompra','🛒','Compré insumos'],['newGasto','💸','Anotar un gasto'],['goClientes','👥','Mis clientes'],['newBoleta','📎','Subir boleta']]
     .map(([a,e,l])=>`<button type="button" class="qa" data-act="${a}"><span class="e">${e}</span>${l}</button>`).join('')}</div>`;
 }
 
@@ -747,7 +861,7 @@ function pedidoCard(p){
   const vivo=p.estado!=='Cancelado';
   return `<div class="item"><div class="item-top"><div><b data-act="verCliente" data-id="${p.clienteId}" style="cursor:pointer">${esc(cliLabel(p.clienteId))}</b><div class="muted sm">${fmtDate(p.fecha)} · ${items||'Sin productos'}</div></div><div class="amt">${money(p.total)}</div></div>
   <div class="badges">${badgeEstado(p.estado)}${vivo?(p.pagado?`<span class="badge ok">💵 Cobrado${p.metodoPago?' · '+esc(p.metodoPago):''}</span>`:'<span class="badge warn">⏳ Por cobrar</span>'):''}</div>
-  ${zonaTxt(p)||envioCosto(p)?`<div class="muted sm" style="display:flex;gap:10px;flex-wrap:wrap">${zonaTxt(p)?`<span>${p.zonaTipo==='Recojo'?'🏠':'📍'} ${esc(zonaTxt(p))}</span>`:''}${envioCosto(p)?`<span>🚚 Delivery y embalaje: <b>${money(envioCosto(p))}</b></span>`:''}${p.cobroEnvio?`<span>(cobrado ${money(p.cobroEnvio)})</span>`:''}</div>`:''}
+  ${zonaTxt(p)||envioCosto(p)?`<div class="muted sm" style="display:flex;gap:10px;flex-wrap:wrap">${zonaTxt(p)?`<span>${p.zonaTipo==='Recojo'?'🏠':'📍'} ${esc(zonaTxt(p))}</span>`:''}${envioCosto(p)?`<span>🚚 Delivery y embalaje: <b>${money(envioCosto(p))}</b></span>`:''}${p.cobroEnvio?`<span>(cobrado ${money(p.cobroEnvio)})</span>`:''}${envioCosto(p)?compBadge('Pedidos',p.id,'Comprobante','⚠️ Sin comprobante de envío'):''}</div>`:''}
   ${p.direccionEntrega?`<div class="muted sm ellipsis">🏷️ ${esc(p.direccionEntrega)}</div>`:''}
   <div class="actions">
     ${p.estado==='Pendiente'?`<button type="button" class="btn sm ok" data-act="pedEntregado" data-id="${p.id}">✓ Entregado</button>`:''}
@@ -781,8 +895,8 @@ function prodCard(p){
 /* ===================== PRODUCCIÓN ===================== */
 VIEWS.produccion=()=>{
   const s=route.sub.produccion;
-  const body={lotes:vLotes,lab:vLab,insumos:vInsumos,compras:vCompras,gastos:vGastos}[s]();
-  return `<div class="page-head"><h2>🏭 Producción y costos</h2></div>${seg('produccion',[['lotes','Lotes'],['lab','🧪 Laborat.'],['insumos','Almacén'],['compras','Compras'],['gastos','Gastos']],s)}${body}`;
+  const body={lotes:vLotes,lab:vLab,insumos:vInsumos,compras:vCompras,gastos:vGastos,boletas:vBoletas}[s]();
+  return `<div class="page-head"><h2>🏭 Producción y costos</h2></div>${seg('produccion',[['lotes','Lotes'],['lab','🧪 Laborat.'],['insumos','Almacén'],['compras','Compras'],['gastos','Gastos'],['boletas','📎 Boletas']],s)}${body}`;
 };
 function vLotes(){
   const L=[...DB.Produccion].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));
@@ -818,7 +932,7 @@ function vCompras(){
   <button type="button" class="btn block gold" data-act="newCompra">🛒 Registrar compra</button>
   ${L.length?`<div class="list">${L.map(c=>{const i=byId('Insumos',c.insumoId);
     return `<div class="item"><div class="item-top"><div><b>${esc(i?i.nombre:'Insumo eliminado')}</b><div class="muted sm">${fmtDate(c.fecha)} · ${fmtNum(c.cantidad)} ${esc(i?i.unidad:'')}${c.proveedor?' · '+esc(c.proveedor):''}</div></div><div class="amt">${money(c.costoTotal)}</div></div>
-    <div class="badges"><span class="badge gold">${c.cantidad?money(c.costoTotal/c.cantidad):'—'} por ${esc(i?i.unidad:'unidad')}</span></div>
+    <div class="badges"><span class="badge gold">${c.cantidad?money(c.costoTotal/c.cantidad):'—'} por ${esc(i?i.unidad:'unidad')}</span>${compBadge('Compras',c.id,'Boleta','Sin boleta')}</div>
     <div class="actions"><button type="button" class="btn sm ghost" data-act="editCompra" data-id="${c.id}">Editar</button></div></div>`}).join('')}</div>`
   :empty('🛒','Sin compras registradas','Anota lo que compras para saber cuánto gastas en insumos.')}`;
 }
@@ -845,7 +959,7 @@ function labCard(g){
     <div class="actions"><button type="button" class="btn sm ghost" data-act="editLab" data-id="${g.id}">Editar</button></div></div>`;
 }
 function formLab(g={}){
-  const isNew=!g.id, u=isNew?ultimoLabPago():null, hoy=qKey(today());
+  const rid=g.id||uid(), isNew=!g.id, u=isNew?ultimoLabPago():null, hoy=qKey(today());
   const qs=[];let k=qPrev(hoy);qs.push(hoy);for(let i=0;i<7;i++){qs.push(k);k=qPrev(k)}
   let def=g.quincena||(g.fecha&&qKey(g.fecha));
   if(!def){const ant=qPrev(hoy);def=!labPagoQ(ant)&&labPagos().length?ant:hoy}
@@ -857,12 +971,73 @@ function formLab(g={}){
     ${field('Quincena *',sel('quincena',qs.map(q=>[q,qLabel(q)+(labPagoQ(q)&&(!g.id||qDe(g)!==q)?' · ya tiene pago':'')]),def))}
     <div class="row2">${field(`Monto pagado (${cfg.moneda}) *`,inp('monto',g.monto||(u?u.monto:'')||'','type="number" step="0.01" min="0" inputmode="decimal" required placeholder="0.00"'),u?`Último pago: ${money(u.monto)}`:'')}${field('Fecha de pago',inp('fecha',g.fecha||today(),'type="date" required'))}</div>
     ${field('Nota',inp('descripcion',g.descripcion&&g.descripcion!==LAB?g.descripcion:'','placeholder="Opcional: Yape, efectivo, adelanto…"'))}
-    <div class="calc" id="labCalc"></div>`,
+    <div class="calc" id="labCalc"></div>
+    ${adjuntosBox('Gastos',g.id,'Recibo del pago (opcional)')}`,
   {onOpen:upd,onInput:(e,f)=>upd(f),
    onSubmit:d=>{if(num(d.monto)<=0){toast('Indica el monto pagado','bad');return false}
-     saveRow('Gastos',{id:g.id||uid(),fecha:d.fecha,categoria:LAB,descripcion:d.descripcion||LAB,monto:+num(d.monto).toFixed(2),quincena:d.quincena});
+     saveRow('Gastos',Object.assign({},g,{id:rid,fecha:d.fecha,categoria:LAB,descripcion:d.descripcion||LAB,monto:+num(d.monto).toFixed(2),quincena:d.quincena}));
+     encolarAdj({tipo:'Producción (elementos/servicios)',refTipo:'Gastos',refId:rid,fecha:d.fecha,monto:num(d.monto),proveedor:'Laboratorista',nota:'',referencia:refText('Gastos',rid)});
      toast(`🧪 Pago de la quincena ${qLabel(d.quincena)} registrado`);render()},
    onDelete:g.id?()=>confirmDel('Gastos',g.id,'este pago al laboratorista'):null});
+}
+function faltantes(){
+  const desde=isoD(new Date(Date.now()-30*864e5));
+  const c=DB.Compras.filter(x=>x.fecha>=desde&&!tieneComp('Compras',x.id)).map(x=>({rt:'Compras',id:x.id,f:x.fecha,t:'🛒 Compra sin boleta',d:refText('Compras',x.id),m:x.costoTotal}));
+  const e=DB.Pedidos.filter(x=>x.fecha>=desde&&x.estado!=='Cancelado'&&envioCosto(x)>0&&!tieneComp('Pedidos',x.id)).map(x=>({rt:'Pedidos',id:x.id,f:x.fecha,t:'🚚 Envío sin comprobante',d:refText('Pedidos',x.id),m:envioCosto(x)}));
+  return {c,e,all:[...c,...e].sort((a,b)=>b.f.localeCompare(a.f))};
+}
+function vBoletas(){
+  const f=route.fBol||'todas', fal=faltantes(), mes=periodRange('mes');
+  const all=[...UPQ.map(q=>Object.assign({_pend:1},q)),...DB.Comprobantes].sort((a,b)=>(b.fecha+(b.creado||'')).localeCompare(a.fecha+(a.creado||'')));
+  const cnt=t=>all.filter(c=>c.tipo===t).length;
+  let L=all; if(f!=='todas'&&f!=='faltan') L=all.filter(c=>c.tipo===f);
+  return `${tip('Sube aquí las <b>boletas, facturas y comprobantes</b> (foto o escaneo/PDF). La imagen se convierte en un <b>link</b> y en la hoja <b>Comprobantes</b> queda solo ese link. Vincúlalas a la compra, gasto o envío para tener trazabilidad.')}
+  <div class="kpis" style="margin-bottom:12px">${kpi('📎','Boletas guardadas',DB.Comprobantes.length,`${DB.Comprobantes.filter(c=>inP(c.fecha,mes)).length} este mes`,'info')}${kpi('⚠️','Faltan boletas',fal.all.length,`últimos 30 días: ${fal.c.length} compras · ${fal.e.length} envíos`,fal.all.length?'warn':'ok')}</div>
+  ${UPQ.length?`<div class="alert info" style="margin-bottom:10px"><p>⏳ <b>${UPQ.length}</b> boleta(s) esperando subir.${upErr?`<br><small>${esc(upErr)}</small>`:''}</p><button type="button" class="btn sm ghost" data-act="reintentarSubida">Reintentar</button></div>`:''}
+  <button type="button" class="btn block" data-act="newBoleta">📎 Subir boleta</button>
+  ${chips('fBol',[['todas',`Todas (${all.length})`],...COMP_TIPOS.map(([t,i])=>[t,`${i} ${t.split(' (')[0]} (${cnt(t)})`]),['faltan',`⚠️ Faltan (${fal.all.length})`]],f)}
+  ${f==='faltan'?(fal.all.length?`<div class="list">${fal.all.map(x=>`<div class="item"><div class="item-top"><div><b>${x.t}</b><div class="muted sm">${esc(x.d)}</div></div><div class="amt">${money(x.m)}</div></div>
+      <div class="actions"><button type="button" class="btn sm gold" data-act="${refAct[x.rt]}" data-id="${x.id}">📎 Adjuntar</button></div></div>`).join('')}</div>`:empty('✅','¡Todo tiene su boleta!','Cada compra y cada envío tiene su comprobante adjunto.'))
+  :L.length?`<div class="list">${L.map(bolCard).join('')}</div>`:empty('📎','Aún no hay boletas','Toma una foto a la boleta de tu próxima compra o envío.',`<button type="button" class="btn" data-act="newBoleta">📎 Subir boleta</button>`)}`;
+}
+function bolCard(c){
+  const ref=c.refTipo&&c.refId&&byId(c.refTipo,c.refId);
+  return `<div class="item"><div class="bol">${compThumb(c,1)}<div>
+    <div class="item-top"><div><b>${compIcon(c.tipo)} ${esc(c.tipo)}</b><div class="muted sm">${fmtDate(c.fecha)}${c.proveedor?' · '+esc(c.proveedor):''}</div></div>${c.monto?`<div class="amt">${money(c.monto)}</div>`:''}</div>
+    ${c.referencia||ref?`<div class="muted sm" style="margin-top:4px">🔗 ${ref?`<a href="#" data-act="${refAct[c.refTipo]}" data-id="${c.refId}">${esc(refText(c.refTipo,c.refId))}</a>`:esc(c.referencia)+' <small>(registro eliminado)</small>'}</div>`:'<div class="muted sm" style="margin-top:4px">Sin vincular</div>'}
+    ${c.nota?`<div class="muted sm">📝 ${esc(c.nota)}</div>`:''}
+    <div class="actions">${c._pend?'<span class="badge info">⏳ Subiendo…</span>':`<a class="btn sm ghost" href="${esc(c.url)}" target="_blank" rel="noopener">👁️ Ver</a>`}<button type="button" class="btn sm ghost" data-act="delBoleta" data-id="${c.id}">🗑️</button>${c.deleteUrl?`<a class="btn sm ghost" href="${esc(c.deleteUrl)}" target="_blank" rel="noopener" title="Borrar la imagen en ImgBB">❌ ImgBB</a>`:''}</div>
+  </div></div></div>`;
+}
+function vincOpts(tipo,sel){
+  const o=[['','— Sin vincular —']];
+  const recent=(arr,n)=>[...arr].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id)).slice(0,n);
+  if(tipo==='Compra de insumos') recent(DB.Compras,40).forEach(x=>o.push(['Compras|'+x.id,`${tieneComp('Compras',x.id)?'📎 ':''}${refText('Compras',x.id)} · ${money(x.costoTotal)}`]));
+  if(tipo==='Producción (elementos/servicios)'){recent(DB.Gastos,40).forEach(x=>o.push(['Gastos|'+x.id,`${tieneComp('Gastos',x.id)?'📎 ':''}${refText('Gastos',x.id)} · ${money(x.monto)}`]));recent(DB.Produccion,15).forEach(x=>o.push(['Produccion|'+x.id,refText('Produccion',x.id)]))}
+  if(tipo==='Envío') recent(DB.Pedidos.filter(x=>x.zonaTipo!=='Recojo'&&x.estado!=='Cancelado'),40).forEach(x=>o.push(['Pedidos|'+x.id,`${tieneComp('Pedidos',x.id)?'📎 ':envioCosto(x)?'⚠️ ':''}${refText('Pedidos',x.id)}${envioCosto(x)?' · '+money(envioCosto(x)):''}`]));
+  return o.map(([v,l])=>`<option value="${esc(v)}" ${v===sel?'selected':''}>${esc(l)}</option>`).join('');
+}
+function formBoleta(pre={}){
+  const tipo0=pre.tipo||'Compra de insumos';
+  const upd=(e,f)=>{const el=f.elements,t=e&&e.target;
+    if(t&&t.name==='tipo'){el.vinculo.innerHTML=vincOpts(el.tipo.value,'')}
+    $('#vincWrap').hidden=el.tipo.value==='Otro';
+    if(t&&(t.name==='vinculo'||t.name==='tipo')&&el.vinculo.value){const [rt,id]=el.vinculo.value.split('|'),r=byId(rt,id);if(r){
+      if(!num(el.monto.value)) el.monto.value=rt==='Compras'?r.costoTotal:rt==='Gastos'?r.monto:rt==='Pedidos'?envioCosto(r):'';
+      if(!el.proveedor.value&&rt==='Compras') el.proveedor.value=r.proveedor||'';
+      if(r.fecha) el.fecha.value=r.fecha;}}
+  };
+  openSheet('📎 Subir boleta',`
+    <div class="row2">${field('Tipo',sel('tipo',COMP_TIPOS.map(([t,i])=>[t,i+' '+t]),tipo0))}${field('Fecha',inp('fecha',today(),'type="date" required'))}</div>
+    <div id="vincWrap">${field('Vincular a (opcional)',`<select name="vinculo">${vincOpts(tipo0,pre.vinculo||'')}</select>`,'Así sabes a qué compra, gasto o envío pertenece.')}</div>
+    <div class="row2">${field(`Monto (${cfg.moneda})`,inp('monto','','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}${field('Emisor / proveedor',inp('proveedor','','placeholder="Ej: Envases del Sur"'))}</div>
+    ${field('Nota',inp('nota','','placeholder="Opcional: N° de boleta, detalle…"'))}
+    ${adjuntosBox('','', 'Foto o escaneo de la boleta *')}`,
+  {submitText:'Subir boleta',onOpen:f=>upd(null,f),onInput:upd,
+   onSubmit:d=>{if(!SH.adj.length){toast('Toma una foto o elige el archivo de la boleta','bad');return false}
+     const [rt,id]=(d.tipo!=='Otro'&&d.vinculo?d.vinculo:'|').split('|');
+     const n=encolarAdj({tipo:d.tipo,refTipo:rt,refId:id,fecha:d.fecha,monto:num(d.monto),proveedor:d.proveedor,nota:d.nota,referencia:rt?refText(rt,id):''});
+     route.tab='produccion';route.sub.produccion='boletas';route.fBol='todas';toast(`📎 Subiendo ${n} archivo(s)…`);render()}});
 }
 function vGastos(){
   const L=[...DB.Gastos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));
@@ -873,6 +1048,7 @@ function vGastos(){
   <button type="button" class="btn block" data-act="newGasto">+ Anotar gasto</button>
   ${L.length?`<div class="list">${L.map(g=>`<div class="item"><div class="item-top"><div class="cli-head"><div class="avatar" style="background:var(--bad-soft)">${ic[g.categoria]||'📦'}</div><div><b class="ellipsis" style="display:block">${esc(g.descripcion||g.categoria)}</b><div class="muted sm">${fmtDate(g.fecha)} · ${esc(g.categoria)}</div></div></div><div class="amt">${money(g.monto)}</div></div>
     ${g.categoria===LAB?`<div class="muted sm" style="margin-top:6px">Pago quincenal · ${qLabel(qDe(g))}</div>`:''}
+    <div class="badges">${compBadge('Gastos',g.id,'Boleta','Sin boleta')}</div>
     <div class="actions"><button type="button" class="btn sm ghost" data-act="${g.categoria===LAB?'editLab':'editGasto'}" data-id="${g.id}">Editar</button></div></div>`).join('')}</div>`
   :empty('💸','Sin gastos anotados','Ejemplo: “Delivery a Miraflores – S/ 10”.')}`;
 }
@@ -964,14 +1140,14 @@ VIEWS.reportes=()=>{
     </tbody></table></div>`:empty('🏭','Sin producción en este periodo','')}
   </div>
   <div class="card"><h3>⬇️ Descargar en Excel (CSV)</h3><p class="muted sm" style="margin:0 0 10px">Se abre en Excel o Google Sheets.</p>
-    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="csv" data-t="clientes">👥 Clientes</button><button type="button" class="btn sm ghost" data-act="csv" data-t="pedidos">🧾 Pedidos</button><button type="button" class="btn sm ghost" data-act="csv" data-t="produccion">🏭 Producción</button><button type="button" class="btn sm ghost" data-act="csv" data-t="costos">💸 Costos</button></div>
+    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="csv" data-t="clientes">👥 Clientes</button><button type="button" class="btn sm ghost" data-act="csv" data-t="pedidos">🧾 Pedidos</button><button type="button" class="btn sm ghost" data-act="csv" data-t="produccion">🏭 Producción</button><button type="button" class="btn sm ghost" data-act="csv" data-t="costos">💸 Costos</button><button type="button" class="btn sm ghost" data-act="csv" data-t="comprobantes">📎 Boletas</button></div>
   </div>`;
 };
 
 /* ===================== HOJA (MODAL) ===================== */
 let SH=null;
 function openSheet(title,body,o={}){
-  SH=o;
+  SH=o; o.adj=[];
   $('#shTitle').textContent=title; $('#shBody').innerHTML=body; $('#shBody').scrollTop=0;
   $('#shSubmit').textContent=o.submitText||'Guardar'; $('#shSubmit').hidden=!!o.noSubmit;
   $('.sheet-f .btn.ghost').textContent=o.noSubmit?'Cerrar':'Cancelar';
@@ -1051,6 +1227,7 @@ function formInsumo(i={}){
    onDelete:i.id?()=>confirmDel('Insumos',i.id,'este insumo'):null});
 }
 function formCompra(c={},preIns){
+  const rid=c.id||uid();
   if(!DB.Insumos.length) return needFirst('Primero registra al menos un insumo en tu almacén (por ejemplo: aguardiente, azúcar o botellas).','newInsumo','Crear insumo');
   const provs=[...new Set(DB.Compras.map(x=>x.proveedor).filter(Boolean))];
   const upd=f=>{const i=byId('Insumos',f.elements.insumoId.value),q=num(f.elements.cantidad.value),t=num(f.elements.costoTotal.value);
@@ -1062,10 +1239,12 @@ function formCompra(c={},preIns){
     <div class="row2">${field('Cantidad *',inp('cantidad',c.cantidad||'','type="number" step="any" min="0" inputmode="decimal" required')+'<small id="cUnit"></small>')}${field(`Pagaste en total (${cfg.moneda}) *`,inp('costoTotal',c.costoTotal||'','type="number" step="0.01" min="0" inputmode="decimal" required'))}</div>
     <div class="calc" id="cCalc"></div>
     ${field('¿A quién le compraste?',inp('proveedor',c.proveedor,'list="provL" placeholder="Proveedor (opcional)"')+`<datalist id="provL">${provs.map(p=>`<option value="${esc(p)}">`).join('')}</datalist>`)}
-    ${field('Nota',inp('nota',c.nota,'placeholder="Opcional"'))}`,
+    ${field('Nota',inp('nota',c.nota,'placeholder="Opcional"'))}
+    ${adjuntosBox('Compras',c.id,'Boleta de la compra')}`,
   {onOpen:upd,onInput:(e,f)=>upd(f),
    onSubmit:d=>{if(num(d.cantidad)<=0){toast('La cantidad debe ser mayor a 0','bad');return false}
-     saveRow('Compras',Object.assign({},c,d,{id:c.id||uid()}));toast(c.id?'Compra actualizada ✅':'Compra registrada. ¡Tu almacén subió! 📦');render()},
+     saveRow('Compras',Object.assign({},c,d,{id:rid}));
+     encolarAdj({tipo:'Compra de insumos',refTipo:'Compras',refId:rid,fecha:d.fecha,monto:num(d.costoTotal),proveedor:d.proveedor||'',nota:'',referencia:refText('Compras',rid)});toast(c.id?'Compra actualizada ✅':'Compra registrada. ¡Tu almacén subió! 📦');render()},
    onDelete:c.id?()=>confirmDel('Compras',c.id,'esta compra'):null});
 }
 function consLine(c={}){return `<div class="line cons"><select data-role="ins">${insOpts(c.insumoId,true)}</select><input data-role="qty" type="number" step="any" min="0" inputmode="decimal" placeholder="Cant." value="${c.cantidad??''}"><span class="unit" data-role="unit"></span><button type="button" class="icon-btn" data-act="rmLine" aria-label="Quitar">✕</button></div>`}
@@ -1104,6 +1283,7 @@ function formLote(l={},preProd){
 function pedLine(it={}){return `<div class="line ped"><select data-role="prod">${prodOpts(it.productoId,true)}</select><input data-role="qty" type="number" min="1" step="1" inputmode="numeric" value="${it.cantidad??1}"><input data-role="price" type="number" min="0" step="0.01" inputmode="decimal" value="${it.precio??''}" placeholder="0.00"><button type="button" class="icon-btn" data-act="rmLine" aria-label="Quitar">✕</button></div>`}
 function readPed(f){return $$('.line.ped',f).map(r=>({productoId:$('[data-role=prod]',r).value,cantidad:num($('[data-role=qty]',r).value),precio:num($('[data-role=price]',r).value)})).filter(x=>x.productoId&&x.cantidad>0)}
 function formPedido(p={},preCli){
+  const rid=p.id||uid();
   if(!DB.Productos.length) return needFirst('Primero crea al menos un producto para poder venderlo.','newProducto','Crear producto');
   const items=(p.items&&p.items.length)?p.items:[{}];
   const cliOpts=[['','— Elige el N° de cliente —']];for(let n=1;n<=maxCli();n++) cliOpts.push([cliId(n),`N° ${n}${isReg(n)?'  ✓':''}`]);
@@ -1152,6 +1332,7 @@ function formPedido(p={},preCli){
         <div class="row3">${field(`Delivery (${cfg.moneda})`,inp('costoEnvio',p.costoEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}${field(`Embalaje (${cfg.moneda})`,inp('costoEmbalaje',p.costoEmbalaje||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}${field(`Flete (${cfg.moneda})`,inp('costoFlete',p.costoFlete||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}</div>
         <small class="muted" style="display:block;margin:-6px 0 10px">Lo que <b>tú pagas por este pedido</b>: delivery/courier, embalaje (cajas, burbupack) y flete a provincia.</small>
         ${field(`¿Le cobras el envío al cliente? (${cfg.moneda})`,inp('cobroEnvio',p.cobroEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00 si es gratis"'),'Se suma al total del pedido.')}
+        ${adjuntosBox('Pedidos',p.id,'Comprobante del envío (delivery / agencia)')}
       </div>
       ${field('Referencia de entrega (opcional)',inp('direccionEntrega',p.direccionEntrega,'placeholder="Ej: agencia Shalom, mercado, puesto 12…"'))}
     </div>
@@ -1167,18 +1348,21 @@ function formPedido(p={},preCli){
      if(!isReg(cn)&&f.elements.marcarReg.checked) setRegistrado(cn,true);
      const recojo=d.zonaTipo==='Recojo', zona=recojo?'':(d.zona||'').trim();
      const sub=+sum(its,i=>i.cantidad*i.precio).toFixed(2), cobro=recojo?0:num(d.cobroEnvio);
-     saveRow('Pedidos',{id:p.id||uid(),fecha:d.fecha,clienteId:cid,items:its,subtotal:sub,total:+(sub+cobro).toFixed(2),estado:d.estado,pagado:f.elements.pagado.checked,metodoPago:d.metodoPago,
+     saveRow('Pedidos',{id:rid,fecha:d.fecha,clienteId:cid,items:its,subtotal:sub,total:+(sub+cobro).toFixed(2),estado:d.estado,pagado:f.elements.pagado.checked,metodoPago:d.metodoPago,
        zonaTipo:d.zonaTipo,zona,costoEnvio:recojo?0:num(d.costoEnvio),costoEmbalaje:recojo?0:num(d.costoEmbalaje),costoFlete:recojo?0:num(d.costoFlete),cobroEnvio:cobro,direccionEntrega:d.direccionEntrega,nota:d.nota});
      if(zona) setZonaCliente(cn,d.zonaTipo,zona);
+     if(!recojo) encolarAdj({tipo:'Envío',refTipo:'Pedidos',refId:rid,fecha:d.fecha,monto:+(num(d.costoEnvio)+num(d.costoEmbalaje)+num(d.costoFlete)).toFixed(2),proveedor:d.direccionEntrega||'',nota:'',referencia:refText('Pedidos',rid)});
      toast(p.id?'Pedido actualizado ✅':'Pedido anotado 🧾');render()},
    onDelete:p.id?()=>confirmDel('Pedidos',p.id,'este pedido'):null});
 }
 function formGasto(g={}){
+  const rid=g.id||uid();
   openSheet(g.id?'Editar gasto':'💸 Anotar gasto',`
     <div class="row2">${field('Fecha',inp('fecha',g.fecha||today(),'type="date" required'))}${field(`Monto (${cfg.moneda}) *`,inp('monto',g.monto||'','type="number" step="0.01" min="0" inputmode="decimal" required placeholder="0.00"'))}</div>
     ${field('Tipo de gasto',sel('categoria',GASTO_CATS.filter(([c])=>c!==LAB).map(([c,e])=>[c,e+' '+c]),g.categoria||'Mano de obra'),'El pago quincenal del laboratorista se registra en la pestaña 🧪 Laborat.')}
-    ${field('Detalle',inp('descripcion',g.descripcion,'placeholder="Ej: Delivery a San Borja"'))}`,
-  {onSubmit:d=>{if(num(d.monto)<=0){toast('El monto debe ser mayor a 0','bad');return false}saveRow('Gastos',Object.assign({},g,d,{id:g.id||uid()}));toast(g.id?'Gasto actualizado ✅':'Gasto anotado 💸');render()},
+    ${field('Detalle',inp('descripcion',g.descripcion,'placeholder="Ej: Frascos, etiquetas, análisis…"'))}
+    ${adjuntosBox('Gastos',g.id,'Boleta o recibo')}`,
+  {onSubmit:d=>{if(num(d.monto)<=0){toast('El monto debe ser mayor a 0','bad');return false}saveRow('Gastos',Object.assign({},g,d,{id:rid}));encolarAdj({tipo:'Producción (elementos/servicios)',refTipo:'Gastos',refId:rid,fecha:d.fecha,monto:num(d.monto),proveedor:'',nota:'',referencia:refText('Gastos',rid)});toast(g.id?'Gasto actualizado ✅':'Gasto anotado 💸');render()},
    onDelete:g.id?()=>confirmDel('Gastos',g.id,'este gasto'):null});
 }
 function verCliente(id){
@@ -1235,7 +1419,7 @@ function ayuda(){
     <h4>🔁 El ciclo del negocio</h4>
     <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y sube tu stock.</li><li><b>Vendes en un pedido</b> 🧾 → baja el stock.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
     <h4>📖 Palabras clave</h4>
-    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Laboratorista:</b> se le paga cada quincena. Registra el pago en Producción → 🧪 Laborat.; se reparte entre lo producido en esa quincena y suma al costo por unidad.</li><li><b>Delivery y embalaje:</b> son costos de cada pedido; se anotan dentro del pedido.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
+    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Laboratorista:</b> se le paga cada quincena. Registra el pago en Producción → 🧪 Laborat.; se reparte entre lo producido en esa quincena y suma al costo por unidad.</li><li><b>Delivery y embalaje:</b> son costos de cada pedido; se anotan dentro del pedido.</li><li><b>Boletas 📎:</b> en cada compra, gasto y envío puedes tomar una foto o subir un PDF del comprobante. Se convierte en un link (ImgBB) y la hoja guarda solo ese link. En Producción → 📎 Boletas ves todas y lo que falta adjuntar.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
     <h4>📲 Tenla como app en tu celular</h4>
     <p>Toca <b>Instalar</b> (en Inicio o en ⚙️ Ajustes) y tendrás el ícono del burro en tu pantalla de inicio. Cuando haya mejoras, se actualiza sola: <b>no hace falta volver a instalar</b>.</p>
     <h4>🟢 El punto de arriba</h4>
@@ -1254,6 +1438,7 @@ const CSVS={
   clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° cliente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Unidades:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
   pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Cliente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Subtotal:dec(p.subtotal||p.total-num(p.cobroEnvio)),'Envío cobrado':dec(p.cobroEnvio),Total:dec(p.total),'Tipo destino':p.zonaTipo,Destino:p.zona,'Costo delivery':dec(p.costoEnvio),'Costo embalaje':dec(p.costoEmbalaje),'Costo flete':dec(p.costoFlete),Estado:p.estado,Cobrado:p.pagado?'Sí':'No','Forma de pago':p.metodoPago,Referencia:p.direccionEntrega})),
   produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Tipo:(byId('Productos',l.productoId)||{}).tipo||'',Cantidad:l.botellas,Unidad:(byId('Productos',l.productoId)||{}).unidad||'','Costo insumos':dec(l.costoInsumos),Laboratorista:dec(labLote(l)),'Otros costos':dec(l.otrosCostos),'Costo total':dec(costoLote(l)),'Costo por unidad':dec(l.botellas?costoLote(l)/l.botellas:0),Nota:l.nota})),
+  comprobantes:()=>DB.Comprobantes.map(c=>({Fecha:c.fecha,Tipo:c.tipo,Monto:dec(c.monto),Emisor:c.proveedor,'Vinculado a':c.refTipo&&c.refId&&byId(c.refTipo,c.refId)?refText(c.refTipo,c.refId):c.referencia,Nota:c.nota,Link:c.url,'Link para borrar':c.deleteUrl})),
   costos:()=>[...DB.Compras.map(c=>{const i=byId('Insumos',c.insumoId);return {Fecha:c.fecha,Tipo:'Compra de insumo',Detalle:`${c.cantidad} ${i?i.unidad:''} ${i?i.nombre:''}`.trim(),Monto:dec(c.costoTotal)}}),
     ...DB.Gastos.map(g=>({Fecha:g.fecha,Tipo:g.categoria,Detalle:g.categoria===LAB?`Quincena ${qLabel(qDe(g))}`:g.descripcion,Monto:dec(g.monto)})),
     ...DB.Produccion.filter(l=>num(l.costoLab)>0).map(l=>({Fecha:l.fecha,Tipo:'Laboratorista',Detalle:prodName(byId('Productos',l.productoId)),Monto:dec(l.costoLab)})),
@@ -1286,6 +1471,21 @@ const ACT={
   newPedido:d=>formPedido({},d.cli), editPedido:d=>formPedido(byId('Pedidos',d.id)),
   newGasto:()=>formGasto(), editGasto:d=>formGasto(byId('Gastos',d.id)),
   newLab:()=>formLab(), editLab:d=>formLab(byId('Gastos',d.id)),
+  newBoleta:d=>formBoleta(d||{}),
+  goBoletas:()=>{route.tab='produccion';route.sub.produccion='boletas';closeSheet();render();window.scrollTo(0,0)},
+  fBol:d=>{route.fBol=d.val;render()},
+  verFaltan:()=>{route.fBol='faltan';ACT.goBoletas()},
+  rmAdj:d=>{if(SH&&SH.adj){SH.adj.splice(+d.i,1);renderAdjNuevos()}},
+  reintentarSubida:()=>{processUploads();toast('Reintentando…')},
+  delBoleta:async d=>{
+    const q=UPQ.find(x=>x.id===d.id);
+    if(q){if(await ask('¿Cancelar la subida de esta boleta?','Sí, cancelar')){UPQ=UPQ.filter(x=>x.id!==d.id);saveUPQ();render()}return}
+    const c=byId('Comprobantes',d.id); if(!c) return;
+    if(!await ask('¿Quitar esta boleta de la app y de la hoja?','Sí, quitar')) return;
+    delRow('Comprobantes',c.id);
+    const campo=c.refTipo==='Pedidos'?'comprobanteEnvioUrl':'comprobanteUrl', r=c.refId&&byId(c.refTipo,c.refId);
+    if(r&&r[campo]===c.url){const otro=compsDe(c.refTipo,c.refId)[0];saveRow(c.refTipo,Object.assign({},r,{[campo]:otro?otro.url:''}))}
+    toast('Boleta eliminada 🗑️');render()},
   verCliente:d=>verCliente(d.id),
   guardarZona:d=>{const f=$('#shForm'),z=f.elements.zona.value.trim();setZonaCliente(+d.n,f.elements.zonaTipo.value,z);toast(z?`📍 N° ${d.n}: ${z}`:'Destino borrado');render()},
   usarUltEnvio:()=>{const f=$('#shForm'),u=ultimoEnvio(f.elements.zonaTipo.value,f.elements.zona.value);if(!u)return;f.elements.costoEnvio.value=u.costoEnvio||'';f.elements.costoEmbalaje.value=u.costoEmbalaje||'';f.elements.costoFlete.value=u.costoFlete||'';f.dataset.autoEnv=1;SH.onInput(null,f)},
@@ -1332,7 +1532,12 @@ document.addEventListener('input',e=>{
   const k=e.target.dataset&&e.target.dataset.search; if(!k) return;
   route.q[k]=e.target.value; const L=$('#list'); if(L) L.innerHTML=LISTS[k]();
 });
-document.addEventListener('change',e=>{
+document.addEventListener('change',async e=>{
+  if(e.target.matches&&e.target.matches('input[data-adj]')){
+    const files=[...e.target.files]; e.target.value=''; if(!files.length||!SH) return;
+    for(const fl of files){try{SH.adj.push(await prepararArchivo(fl))}catch(err){toast(err.message,'bad')}}
+    renderAdjNuevos(); return;
+  }
   const n=e.target.dataset&&+e.target.dataset.reg; if(!n) return;
   const on=e.target.checked; setRegistrado(n,on);
   $$(`input[data-reg="${n}"]`).forEach(x=>{x.checked=on;const t=x.closest('.ctile,.regbig');if(t){t.classList.toggle('on',on);const sm=t.querySelector('.cnum small');if(sm)sm.textContent=on?'Registrado':'Sin registrar'}});
@@ -1405,7 +1610,7 @@ render();
 setTimeout(()=>$('#splash').classList.add('out'),900);
 setSync(cfg.apiUrl?'busy':'local');
 if(cfg.apiUrl) syncAll(false);
-window.addEventListener('online',()=>cfg.apiUrl&&syncAll(false));
+window.addEventListener('online',()=>{if(cfg.apiUrl){syncAll(false);processUploads()}});
 
 /* ===================== INSTALAR EN EL CELULAR =====================
    - Android/Chrome: usa el instalador del navegador. El navegador NO lo ofrece

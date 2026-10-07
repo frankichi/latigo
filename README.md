@@ -132,8 +132,31 @@ El usuario normal no ve estas opciones.
 - *Ganancia* = entró − salió.
 - *Stock de botellas* = producidas − vendidas.
 
+## 📎 Boletas y comprobantes (fotos / escaneos) → link
+
+**No se guarda nada en Google Drive.** Cada foto o escaneo se sube a **ImgBB** (hosting de imágenes gratuito, https://imgbb.com), que la convierte en un **link**. En Látigo_BD solo se guarda ese link, como texto.
+
+- En **Compras**, **Gastos**, **pago del laboratorista** y en el **envío de cada pedido** hay un recuadro *📎 Boleta* con dos botones: **📷 Tomar foto** y **📁 Foto o PDF**.
+- También se puede subir desde **Producción → 📎 Boletas → Subir boleta**, eligiendo el tipo (Compra de insumos, Producción, Envío u Otro) y a qué registro pertenece.
+- **Qué guarda la hoja "Comprobantes":** fecha, tipo, monto, emisor, a qué registro pertenece, `url` (link de la imagen), `thumbUrl` (miniatura) y `deleteUrl` (link para borrarla de ImgBB). La compra o el pedido también guardan el link (`comprobanteUrl` / `comprobanteEnvioUrl`).
+- **Las fotos** se achican en el celular antes de subir (~100–400 KB).
+- **Los PDF** escaneados se convierten en el celular a una sola imagen, hasta 6 páginas.
+- Si no hay internet, quedan en cola y se suben solas al volver la señal.
+- **⚠️ Faltan:** muestra las compras y los envíos de los últimos 30 días sin comprobante.
+- La API key de ImgBB va **solo en Apps Script** (`Code.gs`), no en la web: nadie la ve.
+
+### Para activar las boletas (una sola vez, 5 min)
+1. Crea una cuenta gratis en **https://imgbb.com** y entra a **https://api.imgbb.com/** → **Get API key** → copia la key.
+2. En Apps Script de Látigo_BD, reemplaza `Código.gs` por el nuevo `apps-script/Code.gs`. En la línea `const IMGBB_KEY = 'PEGA_AQUI_TU_API_KEY_DE_IMGBB';` pega tu key y guarda. Si activaste el manifiesto, reemplaza también `appsscript.json`.
+3. Elige la función **`probarImgbb`** → **▶ Ejecutar** → acepta el permiso *"Conectarse a un servicio externo"*. En el registro debe salir *✅ ImgBB funciona* y un link de prueba.
+4. **Implementar → Administrar implementaciones → ✏️ → Versión: Nueva versión → Implementar.** La URL no cambia.
+5. Sube la web a GitHub como siempre.
+
+> Las imágenes de ImgBB son públicas para quien tenga el link (no aparecen en buscadores). Para borrar una del todo, usa el botón **❌ ImgBB** de la boleta o el `deleteUrl` de la hoja.
+
 ## 🔐 Seguridad
 
+- Las boletas están en ImgBB: las ve quien tenga su link (está en la hoja y en la app).
 - La app no tiene usuario ni contraseña: **quien tenga el link de la web puede ver y editar los datos** (ventas, costos y pedidos; los clientes son solo números). Compártelo solo con quien use la app y no lo publiques.
 - La clave va dentro de `index.html`. Si quieres que nadie más la vea, deja el repositorio de GitHub en **privado** (Vercel funciona igual).
 - Sin internet la app sigue funcionando: guarda en el celular y sube los cambios cuando vuelve la conexión.
