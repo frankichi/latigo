@@ -45,7 +45,7 @@ const HOJAS = {
 };
 
 // API key gratuita de ImgBB (https://api.imgbb.com/ → Get API key). Se queda aquí, oculta: la web no la ve.
-const IMGBB_KEY = 'PEGA_AQUI_TU_API_KEY_DE_IMGBB';
+const IMGBB_KEY = '5ae40e651daa4cd6e36875edd7e43242';
 const MAX_IMAGEN_MB = 16;
 
 /** Crea las hojas con sus encabezados. Ejecútala una vez. */
