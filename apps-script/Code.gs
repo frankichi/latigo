@@ -20,11 +20,11 @@
  * → ✏️ Editar → Versión: "Nueva versión" → Implementar (la URL no cambia).
  *
  * BOLETAS / COMPROBANTES (fotos y escaneos) — NO se usa Google Drive:
- *  - La imagen se sube a ImgBB (servicio gratuito que la convierte en un link).
- *  - En la hoja "Comprobantes" se guarda SOLO EL LINK (texto).
- *  - Necesitas una API key gratuita de ImgBB: entra a https://api.imgbb.com/,
- *    crea tu cuenta, pulsa "Get API key" y pégala abajo en IMGBB_KEY.
- *  - Para probarla: elige la función  probarImgbb  y pulsa ▶ Ejecutar.
+ *  - La foto se sube a ImgBB DIRECTO DESDE EL CELULAR (ImgBB bloquea a los
+ *    servidores de Google, por eso no pasa por aquí). ImgBB la convierte en link.
+ *  - Este script solo le entrega la API key a la app (protegida con la CLAVE)
+ *    y guarda el link en la hoja "Comprobantes" (SOLO TEXTO).
+ *  - API key gratuita de ImgBB: https://api.imgbb.com/ → "Get API key" → pégala en IMGBB_KEY.
  */
 
 // ID de la hoja "Látigo_BD" (sale de su URL, entre /d/ y /edit)
@@ -46,7 +46,6 @@ const HOJAS = {
 
 // API key gratuita de ImgBB (https://api.imgbb.com/ → Get API key). Se queda aquí, oculta: la web no la ve.
 const IMGBB_KEY = '5ae40e651daa4cd6e36875edd7e43242';
-const MAX_IMAGEN_MB = 16;
 
 /** Crea las hojas con sus encabezados. Ejecútala una vez. */
 function setup() {
@@ -70,7 +69,7 @@ function setup() {
 
   PropertiesService.getScriptProperties().setProperty('CLAVE', CLAVE_APP);
   Logger.log('✅ "' + ss.getName() + '" lista y conectada. Ya puedes usar la app.');
-  Logger.log(claveImgbb() ? '📎 Boletas: ImgBB configurado (ejecuta probarImgbb para verificar).' : '⚠️ Boletas: falta pegar tu API key de ImgBB en IMGBB_KEY.');
+  Logger.log(claveImgbb() ? '📎 Boletas: API key de ImgBB lista.' : '⚠️ Boletas: falta pegar tu API key de ImgBB en IMGBB_KEY.');
 }
 
 /** Muestra la clave actual en el registro (por si la olvidaste). */
@@ -102,7 +101,10 @@ function manejar(p) {
     const accion = p.action || 'ping';
     if (accion === 'ping') return salida({ ok: true, msg: 'Conectado a "' + libro().getName() + '"' });
     if (accion === 'all')  return salida({ ok: true, data: leerTodo() });
-    if (accion === 'upload') return salida(Object.assign({ ok: true }, subirImagen(p)));
+    if (accion === 'imgbbKey') {
+      const k = claveImgbb();
+      return salida(k ? { ok: true, key: k } : { ok: false, error: 'Falta la API key de ImgBB en Apps Script (IMGBB_KEY)' });
+    }
 
     const lock = LockService.getScriptLock();
     lock.waitLock(20000);
@@ -213,52 +215,16 @@ function salida(o) {
 }
 
 /* =================== BOLETAS → LINK (ImgBB) ===================
-   La imagen NO se guarda en Google Drive: se envía a ImgBB y se devuelve su link. */
+   La foto la sube el celular directo a ImgBB; aquí solo se guarda el link en la hoja.
+   (ImgBB responde "You have been forbidden" a los servidores de Google.) */
 
 function claveImgbb() {
   const k = PropertiesService.getScriptProperties().getProperty('IMGBB_KEY') || IMGBB_KEY;
   return /PEGA_AQUI/.test(k) ? '' : String(k || '').trim();
 }
 
-function limpiarNombre(t) {
-  return String(t || 'boleta').normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .replace(/[^A-Za-z0-9 _-]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'boleta';
-}
-
-/** Recibe la imagen en base64, la sube a ImgBB y devuelve sus links. */
-function subirImagen(p) {
-  const key = claveImgbb();
-  if (!key) throw new Error('Falta la API key de ImgBB en Apps Script (IMGBB_KEY)');
-  if (!p.data) throw new Error('No llegó ninguna imagen');
-  const mime = String(p.mime || 'image/jpeg');
-  if (!/^image\/(jpeg|png|webp|gif|bmp)$/.test(mime)) throw new Error('Solo se aceptan imágenes');
-  const bytes = Utilities.base64Decode(String(p.data).replace(/^data:[^,]*,/, ''));
-  if (bytes.length > MAX_IMAGEN_MB * 1024 * 1024) throw new Error('La imagen pesa más de ' + MAX_IMAGEN_MB + ' MB');
-  const fecha = String(p.fecha || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd')).slice(0, 10);
-  const nombre = limpiarNombre('latigo ' + fecha + ' ' + (p.tipo || 'boleta'));
-  const res = UrlFetchApp.fetch('https://api.imgbb.com/1/upload', {
-    method: 'post',
-    payload: { key: key, name: nombre, image: Utilities.newBlob(bytes, mime, nombre + '.jpg') },
-    muteHttpExceptions: true
-  });
-  let j;
-  try { j = JSON.parse(res.getContentText()); }
-  catch (e) { throw new Error('ImgBB no respondió (código ' + res.getResponseCode() + ')'); }
-  if (!j || !j.success || !j.data) throw new Error('ImgBB: ' + ((j && j.error && j.error.message) || ('código ' + res.getResponseCode())));
-  const d = j.data;
-  return {
-    id: d.id,
-    url: d.url,                                                   // link directo a la imagen
-    viewUrl: d.url_viewer,
-    thumbUrl: (d.thumb && d.thumb.url) || d.display_url || d.url, // miniatura para la app
-    deleteUrl: d.delete_url,                                      // link para borrarla de ImgBB
-    nombre: nombre
-  };
-}
-
-/** Prueba tu API key: sube una imagen mínima y muestra su link en el registro. */
-function probarImgbb() {
-  const png1x1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-  const r = subirImagen({ data: png1x1, mime: 'image/png', tipo: 'prueba' });
-  Logger.log('✅ ImgBB funciona. Link de prueba: ' + r.url);
+/** Verifica que la API key esté puesta (la prueba real de subida se hace desde la app). */
+function verificarImgbb() {
+  const k = claveImgbb();
+  Logger.log(k ? '✅ API key de ImgBB lista (' + k.slice(0, 6) + '…). La app sube las fotos directo desde el celular.' : '⚠️ Falta pegar la API key en IMGBB_KEY.');
 }

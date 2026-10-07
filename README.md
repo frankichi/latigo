@@ -143,14 +143,16 @@ El usuario normal no ve estas opciones.
 - **Los PDF** escaneados se convierten en el celular a una sola imagen, hasta 6 páginas.
 - Si no hay internet, quedan en cola y se suben solas al volver la señal.
 - **⚠️ Faltan:** muestra las compras y los envíos de los últimos 30 días sin comprobante.
-- La API key de ImgBB va **solo en Apps Script** (`Code.gs`), no en la web: nadie la ve.
+- La API key de ImgBB va **solo en Apps Script** (`Code.gs`). La app la pide al subir y la guarda en el celular. Si la cambias en `Code.gs`, la app toma la nueva sola.
 
-### Para activar las boletas (una sola vez, 5 min)
-1. Crea una cuenta gratis en **https://imgbb.com** y entra a **https://api.imgbb.com/** → **Get API key** → copia la key.
-2. En Apps Script de Látigo_BD, reemplaza `Código.gs` por el nuevo `apps-script/Code.gs`. En la línea `const IMGBB_KEY = 'PEGA_AQUI_TU_API_KEY_DE_IMGBB';` pega tu key y guarda. Si activaste el manifiesto, reemplaza también `appsscript.json`.
-3. Elige la función **`probarImgbb`** → **▶ Ejecutar** → acepta el permiso *"Conectarse a un servicio externo"*. En el registro debe salir *✅ ImgBB funciona* y un link de prueba.
+### Para activar las boletas (una sola vez)
+1. Tu API key de ImgBB ya está puesta en `apps-script/Code.gs` (`IMGBB_KEY`).
+2. En Apps Script de Látigo_BD, reemplaza `Código.gs` por el nuevo `Code.gs` y guarda. Si activaste el manifiesto, reemplaza también `appsscript.json`.
+3. *(Opcional)* Ejecuta **`verificarImgbb`**: debe decir *✅ API key de ImgBB lista*.
 4. **Implementar → Administrar implementaciones → ✏️ → Versión: Nueva versión → Implementar.** La URL no cambia.
-5. Sube la web a GitHub como siempre.
+5. Sube la web a GitHub.
+
+**¿Por qué la foto se sube desde el celular y no desde Apps Script?** ImgBB bloquea a los servidores de Google (*"You have been forbidden to use this website"*). Por eso el celular sube la foto directo a ImgBB, y Apps Script solo le entrega la key (protegida con la clave de la app) y guarda el link en la hoja. La key no está escrita en la web ni en `index.html`.
 
 > Las imágenes de ImgBB son públicas para quien tenga el link (no aparecen en buscadores). Para borrar una del todo, usa el botón **❌ ImgBB** de la boleta o el `deleteUrl` de la hoja.
 

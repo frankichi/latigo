@@ -379,7 +379,7 @@ a.badge{text-decoration:none}
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '1.9.1';
+const APP_VERSION = '1.9.2';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
@@ -458,7 +458,27 @@ function labShare(l){const k=qKey(l.fecha),pago=labPagoQ(k);if(!pago||!l.botella
 const labLote=l=>num(l.costoLab)+labShare(l);           // costoLab = registros antiguos
 const costoLote=l=>num(l.costoTotal)+labShare(l);
 function ultimoLabPago(exceptId){return [...labPagos()].filter(g=>g.id!==exceptId).sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id))[0]||null}
-/* ===== BOLETAS / COMPROBANTES: la imagen se sube a ImgBB (vía Apps Script) y en la hoja queda solo el LINK. Nada en Google Drive. ===== */
+/* ===== BOLETAS / COMPROBANTES: el celular sube la imagen DIRECTO a ImgBB (ImgBB bloquea a los servidores de Google)
+   y en la hoja queda solo el LINK. Nada en Google Drive. La API key se pide a Apps Script (no está escrita en la web). ===== */
+const IMGBB_URL='https://api.imgbb.com/1/upload', IMGBB_CACHE='latigo_imgbb_k';
+async function imgbbKey(force){
+  if(!force){const k=load(IMGBB_CACHE,'');if(k) return k}
+  const j=await api({action:'imgbbKey'}); store(IMGBB_CACHE,j.key); return j.key;
+}
+function dataUrlABlob(d){const [h,b]=d.split(',');const bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return new Blob([u],{type:(h.match(/:(.*?);/)||[])[1]||'image/jpeg'})}
+async function subirAImgbb(it,reintento){
+  const key=await imgbbKey(reintento);
+  const nombre=('latigo '+it.fecha+' '+(it.tipo||'boleta')).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9 _-]+/g,' ').replace(/\s+/g,'-').slice(0,80);
+  const fd=new FormData(); fd.append('key',key); fd.append('name',nombre); fd.append('image',dataUrlABlob(it.data),nombre+'.jpg');
+  let res; try{ res=await fetch(IMGBB_URL,{method:'POST',body:fd}) }catch(e){ throw new Error('Sin conexión') }
+  let j={}; try{ j=await res.json() }catch(e){}
+  if(!j.success||!j.data){
+    const msg=(j.error&&j.error.message)||('código '+res.status);
+    if(!reintento&&/key/i.test(msg)){ store(IMGBB_CACHE,''); return subirAImgbb(it,true) }   // key cambiada en Apps Script
+    throw new Error('ImgBB: '+msg);
+  }
+  const d=j.data; return {url:d.url,thumbUrl:(d.thumb&&d.thumb.url)||d.display_url||d.url,deleteUrl:d.delete_url};
+}
 const COMP_TIPOS=[['Compra de insumos','🛒'],['Producción (elementos/servicios)','🏭'],['Envío','🚚'],['Otro','📄']];
 const compIcon=t=>(COMP_TIPOS.find(x=>x[0]===t)||[0,'📄'])[1];
 const UPQ_KEY='latigo_upq_v1';
@@ -546,14 +566,14 @@ async function processUploads(){
   try{
     while(UPQ.length){
       const it=UPQ[0];
-      const r=await api({action:'upload',nombre:it.name,mime:it.mime,data:it.data,tipo:it.tipo,fecha:it.fecha,referencia:it.referencia});
+      const r=await subirAImgbb(it);
       saveRow('Comprobantes',{id:it.id,fecha:it.fecha,tipo:it.tipo,monto:it.monto,proveedor:it.proveedor,nota:it.nota,refTipo:it.refTipo||'',refId:it.refId||'',referencia:it.referencia||'',url:r.url,thumbUrl:r.thumbUrl||'',deleteUrl:r.deleteUrl||'',creado:it.creado||today()});
       const campo=it.refTipo==='Pedidos'?'comprobanteEnvioUrl':(it.refTipo==='Compras'||it.refTipo==='Gastos')?'comprobanteUrl':'';
       const ref=campo&&it.refId&&byId(it.refTipo,it.refId); if(ref) saveRow(it.refTipo,Object.assign({},ref,{[campo]:r.url}));
       UPQ=UPQ.filter(x=>x.id!==it.id); saveUPQ(); ok++;
     }
     if(ok) toast(ok>1?`📎 ${ok} boletas guardadas ✅ (link en la hoja)`:'📎 Boleta guardada ✅ (link en la hoja)');
-  }catch(e){ upErr=e.message||''; toast(/imgbb|key|clave|setup|permiso|authoriz|imagen/i.test(upErr)?'📎 No se pudo subir la boleta: '+upErr:'📎 Sin conexión: la boleta se subirá sola cuando vuelva el internet','warn') }
+  }catch(e){ upErr=e.message||''; toast(!/conexi|fetch|network/i.test(upErr)?'📎 No se pudo subir la boleta: '+upErr:'📎 Sin conexión: la boleta se subirá sola cuando vuelva el internet','warn') }
   finally{ upBusy=false; render() }
 }
 const envioCosto=p=>num(p.costoEnvio)+num(p.costoEmbalaje)+num(p.costoFlete);
