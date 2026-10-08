@@ -382,7 +382,7 @@ a.badge{text-decoration:none}
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.0.1';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
@@ -847,19 +847,11 @@ const VIEWS={};
 VIEWS.inicio=()=>{
   const k=calc('mes'), all=calc('todo'), now=new Date(), h=now.getHours();
   const saludo=h<12?'¡Buenos días!':h<19?'¡Buenas tardes!':'¡Buenas noches!';
-  const steps=[['Crea tus productos (lo que vendes)',DB.Productos.length>0,'newProducto'],['Registra tus insumos (lo que usas)',DB.Insumos.length>0,'newInsumo'],['Marca tus pacientes registrados ✅',nReg()>0,'goClientes'],['Registra una producción',DB.Produccion.length>0,'newLote'],['Anota tu primer pedido',DB.Pedidos.length>0,'newPedido']];
-  const done=steps.filter(s=>s[1]).length;
-  const onboard=done<steps.length?`<div class="card onboard"><h3>🚀 Primeros pasos · ${done} de ${steps.length}</h3>
-    <p class="muted sm" style="margin:2px 0 0">Hazlos en este orden y la app hará todas las cuentas por ti.</p>
-    <ol class="steps">${steps.map(([t,ok,act],i)=>`<li class="${ok?'ok':''}"><span class="n">${ok?'✓':i+1}</span><span>${t}</span>${ok?'':`<button type="button" class="btn sm" data-act="${act}">Hacer</button>`}</li>`).join('')}</ol>
-    ${ADMIN&&!DB.Productos.length?`<button type="button" class="btn ghost sm" data-act="demo">🧪 Primero quiero probar con datos de ejemplo</button>`:''}</div>`:'';
   const al=alertas();
   const s=serieMeses(6);
   const ult=[...DB.Pedidos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id)).slice(0,3);
-  const hero=done<steps.length?`<div class="hero"><img src="img/logo-emblema.jpg" alt=""><h2>¡Bienvenido!</h2><p>Aquí controlas producción, insumos, costos, pacientes y ventas.</p><div class="slogan">Saca el burro que tienes dentro</div></div>`:'';
   return `
-  ${installBanner()}${hero}<section class="hello"><h2>${saludo} 👋</h2><p>Así va ${esc(cfg.negocio)} en ${MESES_L[now.getMonth()]}.</p></section>
-  ${onboard}
+  ${installBanner()}<section class="hello"><h2>${saludo} 👋</h2><p>Así va ${esc(cfg.negocio)} en ${MESES_L[now.getMonth()]}.</p></section>
   <div class="kpis">
     ${kpi('💰','Plata que entró',money(k.ingresos),'Ventas cobradas este mes','ok')}
     ${kpi('💸','Plata que salió',money(k.costos),'Insumos, gastos y envíos del mes','bad')}
