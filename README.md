@@ -124,6 +124,22 @@ El usuario normal no ve estas opciones.
    - Cada número de paciente recuerda su distrito o provincia, y la app sugiere el costo del último envío a ese destino.
    - En **Reportes → Envíos por destino** ves cuánto cuesta enviar a cada distrito o provincia.
    - **🧪 Laboratorista (pago quincenal):** en *Producción → 🧪 Laborat.* se registra cada pago de quincena (1–15 y 16–fin de mes). El monto se reparte entre las unidades producidas en esa quincena y suma al costo por unidad. La app muestra si la quincena actual y la anterior están pagadas, y avisa en Inicio si falta registrar una.
+5d. **Fechas, fiados y cobranza (💰):**
+   - Cada pedido guarda su **fecha de pedido**, **fecha de entrega** y **fecha de pago**, además de la **fecha acordada de pago** si aún no paga.
+   - **✓ Entregar:** se elige *Paga al recibir* o *🤝 Fiado* con la fecha en que pagará.
+   - **📅 Aplazar:** cuando el paciente promete pagar otro día. Se guarda la fecha anterior, la nueva y el motivo.
+   - **🔔 Recordar:** envía por WhatsApp su fecha de pedido, de entrega, lo que llevó, el total y la fecha acordada.
+   - **Ventas → 💰 Cobranza:** lo que te deben, agrupado en vencidos, próximos 7 días, más adelante y sin fecha.
+   - **Trazabilidad:** al editar un pedido se ve todo su historial (pedido, entrega fiada, aplazamientos, recordatorios, pago). En la hoja queda en la columna `historial`.
+5e. **Deuda acumulada por paciente (💰 cuenta):**
+   - Si un paciente vuelve a pedir sin haber pagado, cualquier producto, su deuda se **suma**. Cada pedido nuevo avisa: *"ya debe S/ X; con este pedido su deuda sube a S/ Y"*.
+   - **💰 Cuenta del paciente:** deuda total, monto vencido y cada pedido pendiente con su saldo.
+   - **💵 Registrar pago:** acepta pagos parciales (abonos), que se aplican al pedido más antiguo primero.
+   - **🔔 Recordar deuda:** envía por WhatsApp el resumen de todos sus pedidos pendientes.
+   - **📅 Aplazar todos sus pagos:** cambia la fecha acordada de todos sus pedidos pendientes a la vez.
+   - **⛔ Límite de fiado (opcional):** la app avisa si un pedido nuevo lo supera.
+   - **Cobranza** muestra la deuda *por paciente* o *por pedido*. En Pacientes, el filtro **💰 Deben** muestra quién debe y cuánto.
+   - *"Plata que entró"* cuenta cada pago en la fecha en que realmente se pagó.
 6. **Producción → Gastos:** delivery, luz, publicidad, mano de obra…
 7. **Pacientes:** son **números del 1 al 100**, como en el cuaderno del dueño (no se guardan nombres ni teléfonos). Cada número tiene un recuadro ✅ *Registrado* que se activa o desactiva con un toque. Al tocar el número se ve su historial, cuánto compró, cuánto debe y su producto favorito. La cantidad de números se cambia en ⚙️ Ajustes.
 8. **Reportes:** gráficos, ranking de pacientes asiduos y descargas para Excel.
