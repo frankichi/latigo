@@ -140,6 +140,11 @@ El usuario normal no ve estas opciones.
    - **⛔ Límite de fiado (opcional):** la app avisa si un pedido nuevo lo supera.
    - **Cobranza** muestra la deuda *por paciente* o *por pedido*. En Pacientes, el filtro **💰 Deben** muestra quién debe y cuánto.
    - *"Plata que entró"* cuenta cada pago en la fecha en que realmente se pagó.
+5f. **🧪 Órdenes al laboratorio (destilería).** El dueño vende y el laboratorio prepara:
+   - Al anotar un pedido *por entregar*, la app ofrece enviarle al laboratorio por WhatsApp la orden: *“Por favor prepara para el Paciente N° 2: • 8 botellas de Látigo Líquido 750 ml · Lo necesito para el 10 oct”*.
+   - **Ventas → 🧪 Laboratorio** muestra los pedidos *sin avisar*, *preparando* y *listos para entregar*, con el total de unidades a preparar. Se pueden enviar varios pedidos en un solo mensaje.
+   - Cuando el laboratorio avisa, se toca **✅ Ya está listo**. Todo queda en la trazabilidad del pedido.
+   - En ⚙️ Ajustes → 🧪 Laboratoristas se registran 1, 2, 3 o más laboratoristas (nombre + WhatsApp). Al enviar una orden se elige a quién; la app recuerda al último usado. Cada pedido guarda a qué laboratorista se le pidió. Columnas nuevas en Pedidos: `labEstado`, `labFecha`, `labPara`, `labNota` (se crean solas).
 6. **Producción → Gastos:** delivery, luz, publicidad, mano de obra…
 7. **Pacientes:** son **números del 1 al 100**, como en el cuaderno del dueño (no se guardan nombres ni teléfonos). Cada número tiene un recuadro ✅ *Registrado* que se activa o desactiva con un toque. Al tocar el número se ve su historial, cuánto compró, cuánto debe y su producto favorito. La cantidad de números se cambia en ⚙️ Ajustes.
 8. **Reportes:** gráficos, ranking de pacientes asiduos y descargas para Excel.
@@ -173,6 +178,23 @@ El usuario normal no ve estas opciones.
 **¿Por qué la foto se sube desde el celular y no desde Apps Script?** ImgBB bloquea a los servidores de Google (*"You have been forbidden to use this website"*). Por eso el celular sube la foto directo a ImgBB, y Apps Script solo le entrega la key (protegida con la clave de la app) y guarda el link en la hoja. La key no está escrita en la web ni en `index.html`.
 
 > Las imágenes de ImgBB son públicas para quien tenga el link (no aparecen en buscadores). Para borrar una del todo, usa el botón **❌ ImgBB** de la boleta o el `deleteUrl` de la hoja.
+
+## 📸 Varias fotos por pedido
+En cada pedido hay botones para subir **📦 Producto embalado, 🧾 Comprobante de delivery, 🧾 Comprobante de embalaje, 🚛 Guía de agencia y 📷 Otra foto** (cámara o galería, varias a la vez). Cada foto se guarda como link (ImgBB) en la hoja **Comprobantes** con su columna `etiqueta`, y queda en la trazabilidad del pedido.
+Con **WhatsApp** se eligen las fotos y se envían **todas juntas** con el mensaje (botón “Compartir” del celular). El texto también se copia por si WhatsApp no lo muestra. Si el celular no puede compartir fotos, se envían los links.
+
+## 💬 Mensajes de los pacientes
+WhatsApp **no permite** que otra app lea tus chats automáticamente, así que los mensajes se guardan desde la app:
+- **Anotar mensaje:** copiar el mensaje en WhatsApp → *📋 Pegar*. Si pegas varios a la vez, la app los separa con su fecha y hora.
+- **Importar chat:** en WhatsApp → chat del paciente → ⋮ → *Más → Exportar chat → Sin archivos* → elegir **El Látigo** (Android con la app instalada) o guardarlo y subir el `.txt`. Al volver a importar el mismo chat solo se agregan los mensajes nuevos.
+- **Capturas:** fotos o capturas de pantalla (por ejemplo de un audio) se guardan con el mensaje.
+Se guarda solo el texto, la fecha, la hora y si lo escribió el paciente o el dueño: **ni nombres ni teléfonos**. Se ven en la ficha de cada paciente y se descargan en Reportes.
+
+### ⚠️ Actualizar el Apps Script (una sola vez, para la versión 2.4)
+Los mensajes usan una hoja nueva (**Mensajes**). Mientras no se actualice el Apps Script, la app los guarda en el celular y los sube sola después (nada se pierde y lo demás sigue funcionando).
+1. Abre Látigo_BD → Extensiones → Apps Script → borra todo `Código.gs` y pega el nuevo `apps-script/Code.gs` → 💾.
+2. **Implementar → Administrar implementaciones → ✏️ Editar → Versión: “Nueva versión” → Implementar.** La URL no cambia.
+3. La hoja **Mensajes** se crea sola con el primer mensaje que se guarde.
 
 ## 🔐 Seguridad
 

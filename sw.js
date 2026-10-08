@@ -7,7 +7,7 @@
    - Nunca toca las llamadas a Google Sheets (eso lo maneja la app).
    Si cambias este archivo, sube el número de VERSION.
    ========================================================================= */
-const VERSION = 'latigo-v2.2.0';
+const VERSION = 'latigo-v2.4.0';
 const BASICOS = ['./', './manifest.webmanifest', './img/icon-192.png', './img/logo-header.png', './img/logo-emblema.jpg'];
 
 self.addEventListener('install', e => {
@@ -17,9 +17,30 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k))))
+      .then(ks => Promise.all(ks.filter(k => /^latigo-v/.test(k) && k !== VERSION).map(k => caches.delete(k))))   // no borra fotos ni lo compartido
       .then(() => self.clients.claim())
   );
+});
+
+// Recibir lo que se comparte a la app (chat exportado de WhatsApp, capturas, texto) — Android con la app instalada
+self.addEventListener('fetch', e => {
+  const req = e.request, url = new URL(req.url);
+  if (req.method !== 'POST' || url.origin !== self.location.origin || !/\/compartir\/?$/.test(url.pathname)) return;
+  e.respondWith((async () => {
+    try {
+      const fd = await req.formData(), c = await caches.open('latigo-share');
+      await Promise.all((await c.keys()).map(k => c.delete(k)));
+      const base = self.registration.scope, meta = { title: fd.get('title') || '', text: fd.get('text') || '', url: fd.get('url') || '', files: [] };
+      const files = fd.getAll('files').filter(f => f && typeof f === 'object');
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i], key = new URL('__share/' + i, base).href;
+        await c.put(key, new Response(f, { headers: { 'Content-Type': f.type || 'application/octet-stream' } }));
+        meta.files.push({ key, name: f.name || ('archivo-' + i), type: f.type || '' });
+      }
+      await c.put(new URL('__share/meta', base).href, new Response(JSON.stringify(meta), { headers: { 'Content-Type': 'application/json' } }));
+    } catch (err) {}
+    return Response.redirect(new URL('./?compartido=1', self.registration.scope).href, 303);
+  })());
 });
 
 self.addEventListener('fetch', e => {

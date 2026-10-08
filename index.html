@@ -302,6 +302,25 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 .bol .adj-it{width:72px;height:72px}
 .bol>div:last-child{flex:1;min-width:0}
 a.badge{text-decoration:none}
+.fotobtns{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.wa-fotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:0 0 12px}
+.wa-foto{position:relative;display:block;border-radius:12px;overflow:hidden;border:2px solid var(--line);background:#f8f0e4;cursor:pointer}
+.wa-foto img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.wa-foto span{display:block;font-size:.68rem;font-weight:900;padding:4px 6px;line-height:1.15}
+.wa-foto input{position:absolute;top:6px;left:6px;width:22px;height:22px;accent-color:var(--ok)}
+.wa-foto:has(input:checked){border-color:var(--ok)}
+.wa-foto:has(input:not(:checked)) img{opacity:.45}
+.chat{display:flex;flex-direction:column;gap:6px;padding:10px;background:#efe6d6;border-radius:14px;margin:8px 0}
+.chat-day{align-self:center;font-size:.7rem;font-weight:900;background:#fff8ec;color:var(--muted);border-radius:8px;padding:2px 8px;margin:4px 0}
+.bub{position:relative;max-width:86%;align-self:flex-start;background:#fff;border-radius:12px 12px 12px 3px;padding:7px 30px 5px 10px;box-shadow:0 1px 2px rgba(0,0,0,.08);font-size:.9rem;line-height:1.35}
+.bub.yo{align-self:flex-end;background:#dcf8c6;border-radius:12px 12px 3px 12px}
+.bub p{margin:0;white-space:pre-wrap;word-break:break-word}
+.bub small{display:block;font-size:.66rem;color:var(--muted);margin-top:2px;font-weight:700}
+.bub img{display:block;max-width:180px;width:100%;border-radius:8px;margin:2px 0 4px}
+.bub-x{position:absolute;top:4px;right:4px;border:0;background:transparent;font-size:.8rem;cursor:pointer;opacity:.55;padding:2px}
+.cmsg{position:absolute;top:-7px;left:-5px;background:#2e7d4f;color:#fff;font-size:.6rem;font-weight:900;border-radius:99px;padding:1px 6px;border:1.5px solid var(--card)}
+.labrow{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-bottom:8px}.labrow input{min-width:0;width:100%;padding:10px;border:1.5px solid var(--line,#e6d8c4);border-radius:10px;font:inherit;background:#fff}
+.labpick{display:grid;gap:6px;margin:8px 0}.labpick .check{margin:0}
 .wa-prev{white-space:pre-wrap;background:#e7f7dc;border-radius:12px 12px 12px 2px;padding:10px 12px;font-size:.88rem;line-height:1.4;box-shadow:0 1px 2px rgba(0,0,0,.08);margin:0 0 12px}
 .wa-img{display:block;width:120px;height:120px;object-fit:cover;object-position:top;border-radius:12px;margin:0 0 8px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .btn.block.wa{width:100%;margin-bottom:10px}
@@ -395,7 +414,7 @@ a.badge{text-decoration:none}
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '2.2.0';
+const APP_VERSION = '2.4.0';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
@@ -407,9 +426,10 @@ const SCHEMA = {
   Compras:    {f:['id','fecha','insumoId','cantidad','costoTotal','proveedor','nota','comprobanteUrl'], num:['cantidad','costoTotal']},
   Produccion: {f:['id','fecha','productoId','botellas','consumos','costoInsumos','costoLab','otrosCostos','costoTotal','nota'], num:['botellas','costoInsumos','costoLab','otrosCostos','costoTotal'], json:['consumos']},
   Clientes:   {f:['id','numero','registrado','zonaTipo','zona','limite','nota','creado'], num:['numero','limite'], bool:['registrado']},
-  Pedidos:    {f:['id','fecha','clienteId','items','subtotal','total','estado','pagado','metodoPago','zonaTipo','zona','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','direccionEntrega','nota','comprobanteEnvioUrl','fechaEntrega','fechaCompromiso','fechaPago','historial','abonado'], num:['subtotal','total','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','abonado'], json:['items','historial'], bool:['pagado']},
+  Pedidos:    {f:['id','fecha','clienteId','items','subtotal','total','estado','pagado','metodoPago','zonaTipo','zona','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','direccionEntrega','nota','comprobanteEnvioUrl','fechaEntrega','fechaCompromiso','fechaPago','historial','abonado','labEstado','labFecha','labPara','labNota','labA'], num:['subtotal','total','costoEnvio','costoEmbalaje','costoFlete','cobroEnvio','abonado'], json:['items','historial'], bool:['pagado']},
   Gastos:     {f:['id','fecha','categoria','descripcion','monto','quincena','comprobanteUrl'], num:['monto']},
-  Comprobantes:{f:['id','fecha','tipo','monto','proveedor','nota','refTipo','refId','referencia','url','thumbUrl','deleteUrl','creado'], num:['monto']},
+  Comprobantes:{f:['id','fecha','tipo','monto','proveedor','nota','refTipo','refId','referencia','url','thumbUrl','deleteUrl','creado','etiqueta'], num:['monto']},
+  Mensajes:   {f:['id','fecha','hora','clienteId','de','texto','fotos','pedidoId','origen','creado'], json:['fotos']},
 };
 const UNIDADES = ['L','ml','kg','g','unidad','caja','paquete'];
 const INS_CATS = ['Materia prima','Envases','Etiquetas y empaques','Otros'];
@@ -495,6 +515,12 @@ async function subirAImgbb(it,reintento){
   }
   const d=j.data; return {url:d.url,thumbUrl:(d.thumb&&d.thumb.url)||d.display_url||d.url,deleteUrl:d.delete_url};
 }
+/* Fotos de cada pedido (se pueden subir varias, cada una con su etiqueta) */
+const FOTO_ETQ=[['embalado','📦','Producto embalado','Embalado'],['delivery','🧾','Comprobante de delivery','Delivery'],['embalaje','🧾','Comprobante de embalaje','Embalaje'],['flete','🚛','Guía de agencia / flete','Agencia'],['otra','📷','Otra foto','Foto']];
+const etqInfo=k=>FOTO_ETQ.find(x=>x[0]===k)||null;
+const etqTxt=k=>{const e=etqInfo(k);return e?e[2]:'Foto'};
+const etqOrd=c=>{const i=FOTO_ETQ.findIndex(x=>x[0]===(c.etiqueta||c.etq||'delivery'));return i<0?9:i};
+const fotosPed=id=>[...compsDe('Pedidos',id),...pendDe('Pedidos',id).map(q=>Object.assign({_pend:1},q))].sort((a,b)=>etqOrd(a)-etqOrd(b)||String(a.creado||'').localeCompare(String(b.creado||'')));
 const COMP_TIPOS=[['Compra de insumos','🛒'],['Producción (elementos/servicios)','🏭'],['Envío','🚚'],['Otro','📄']];
 const compIcon=t=>(COMP_TIPOS.find(x=>x[0]===t)||[0,'📄'])[1];
 const UPQ_KEY='latigo_upq_v1';
@@ -515,9 +541,17 @@ function refText(rt,id){
 function compBadge(rt,id,si,no){const c=compsDe(rt,id),pq=pendDe(rt,id);if(c.length===1)return ` <a class="badge ok" href="${esc(c[0].url)}" target="_blank" rel="noopener">📎 ${si}</a>`;if(c.length)return ` <span class="badge ok">📎 ${c.length} ${si.toLowerCase()}s</span>`;if(pq.length)return ' <span class="badge info">⏳ Subiendo boleta</span>';return ` <span class="badge ${no.includes('⚠')?'warn':''}">${no}</span>`}
 const refAct={Compras:'editCompra',Gastos:'editGasto',Pedidos:'editPedido',Produccion:'editLote'};
 function compThumb(c,big){
-  if(c._pend) return `<span class="adj-it"><img src="${c.data}" alt=""><span class="st">⏳ subiendo</span></span>`;
-  const src=c.thumbUrl||c.url;
-  return `<a class="adj-it" href="${esc(c.url)}" target="_blank" rel="noopener" title="Ver boleta">${src?`<img src="${esc(src)}" alt="" loading="lazy" onerror="this.outerHTML='🖼️'">`:'🖼️'}</a>`;
+  if(c._pend) return `<span class="adj-it"><img src="${c.data}" alt=""><span class="st">⏳ ${c.etiqueta?etqInfo(c.etiqueta)[3]:'subiendo'}</span></span>`;
+  const src=c.thumbUrl||c.url, e=c.refTipo==='Pedidos'?etqInfo(c.etiqueta||'delivery'):null;
+  return `<a class="adj-it" href="${esc(c.url)}" target="_blank" rel="noopener" title="${e?esc(e[2]):'Ver boleta'}">${src?`<img src="${esc(src)}" alt="" loading="lazy" onerror="this.outerHTML='🖼️'">`:'🖼️'}${e?`<span class="st">${e[3]}</span>`:''}</a>`;
+}
+/* Fotos del pedido: varias, cada una con su etiqueta (producto embalado, comprobantes…) */
+function fotosPedidoBox(id){
+  const ya=id?fotosPed(id):[];
+  return `<div class="adj"><div class="adj-h"><b>📸 Fotos del pedido</b><span class="muted sm">${ya.length?ya.length+' guardada(s)':'Puedes subir varias'}</span></div>
+    <div class="adj-list" id="adjList">${ya.map(c=>compThumb(c)).join('')}</div>
+    <div class="fotobtns">${FOTO_ETQ.map(([k,e,l])=>`<label class="btn sm ghost">${e} ${l}<input type="file" accept="image/*,application/pdf" multiple data-adj data-etq="${k}" hidden></label>`).join('')}</div>
+    <small class="muted">Toca un botón y elige <b>cámara</b> o <b>galería</b>. Cada foto queda guardada como link (ImgBB) en la trazabilidad del pedido y todas se pueden enviar juntas al paciente.</small></div>`;
 }
 /* Caja para adjuntar dentro de un formulario. Los archivos se suben al GUARDAR. */
 function adjuntosBox(rt,id,label){
@@ -530,7 +564,7 @@ function adjuntosBox(rt,id,label){
 function renderAdjNuevos(){
   const L=$('#adjList'); if(!L||!SH) return;
   $$('.adj-it.nuevo',L).forEach(x=>x.remove());
-  L.insertAdjacentHTML('beforeend',(SH.adj||[]).map((a,i)=>`<span class="adj-it nuevo"><img src="${a.data}" alt=""><span class="st">${a.pages>1?a.pages+' pág.':'nuevo'}</span><button type="button" class="x" data-act="rmAdj" data-i="${i}" aria-label="Quitar">✕</button></span>`).join(''));
+  L.insertAdjacentHTML('beforeend',(SH.adj||[]).map((a,i)=>`<span class="adj-it nuevo"><img src="${a.data}" alt=""><span class="st">${a.etq?etqInfo(a.etq)[3]:a.pages>1?a.pages+' pág.':'nuevo'}</span><button type="button" class="x" data-act="rmAdj" data-i="${i}" aria-label="Quitar">✕</button></span>`).join(''));
 }
 /* Todo se convierte a JPEG liviano antes de subir. Los PDF (escaneos) se pasan a imagen con pdf.js. */
 const PDFJS_V='3.11.174', PDFJS_CDN=`https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_V}/`;
@@ -574,7 +608,7 @@ async function prepararArchivo(file){
 /* Pasa los adjuntos del formulario a la cola de subida (se sube aunque se cierre el formulario) */
 function encolarAdj(meta){
   const L=(SH&&SH.adj)||[]; if(!L.length) return 0;
-  L.forEach(a=>UPQ.push(Object.assign({id:uid(),name:a.name,mime:a.mime,data:a.data,creado:today()},meta)));
+  L.forEach((a,k)=>UPQ.push(Object.assign({id:uid(),name:a.name,mime:a.mime,data:a.data,creado:today()+'T'+pad(k)},meta,{etiqueta:a.etq||meta.etiqueta||''})));
   SH.adj=[]; saveUPQ(); setTimeout(processUploads,60); return L.length;
 }
 async function processUploads(){
@@ -583,7 +617,8 @@ async function processUploads(){
     while(UPQ.length){
       const it=UPQ[0];
       const r=await subirAImgbb(it); cacheBoleta(r.url,it.data);
-      saveRow('Comprobantes',{id:it.id,fecha:it.fecha,tipo:it.tipo,monto:it.monto,proveedor:it.proveedor,nota:it.nota,refTipo:it.refTipo||'',refId:it.refId||'',referencia:it.referencia||'',url:r.url,thumbUrl:r.thumbUrl||'',deleteUrl:r.deleteUrl||'',creado:it.creado||today()});
+      if(it.refTipo==='Mensajes'){const m=byId('Mensajes',it.refId);if(m)saveRow('Mensajes',Object.assign({},m,{fotos:[...(m.fotos||[]),{url:r.url,thumb:r.thumbUrl||''}]}))}
+      else saveRow('Comprobantes',{id:it.id,fecha:it.fecha,tipo:it.tipo,monto:it.monto,proveedor:it.proveedor,nota:it.nota,refTipo:it.refTipo||'',refId:it.refId||'',referencia:it.referencia||'',url:r.url,thumbUrl:r.thumbUrl||'',deleteUrl:r.deleteUrl||'',creado:String(it.creado||today()).slice(0,10),etiqueta:it.etiqueta||''});
       const campo=it.refTipo==='Pedidos'?'comprobanteEnvioUrl':(it.refTipo==='Compras'||it.refTipo==='Gastos')?'comprobanteUrl':'';
       const ref=campo&&it.refId&&byId(it.refTipo,it.refId); if(ref) saveRow(it.refTipo,Object.assign({},ref,{[campo]:r.url}));
       UPQ=UPQ.filter(x=>x.id!==it.id); saveUPQ(); ok++;
@@ -608,20 +643,31 @@ async function cacheBoletaBlob(url,b){try{if(window.caches)await (await caches.o
 const puedeCompartirFotos=()=>{try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[new File([new Blob(['x'],{type:'image/jpeg'})],'x.jpg',{type:'image/jpeg'})]}))}catch(e){return false}};
 function waPedido(id){
   const p=byId('Pedidos',id); if(!p) return;
-  const comp=compsDe('Pedidos',id)[0]||pendDe('Pedidos',id).map(q=>Object.assign({_pend:1},q))[0];
-  const share=!!comp&&puedeCompartirFotos();
-  openSheet('💬 Enviar por WhatsApp',`
-    ${comp?`<div class="tip"><span>🧾</span><p>Se enviará el <b>comprobante del delivery</b> para que el paciente vea lo que paga.</p></div>`:(p.cobroEnvio||envioCosto(p)?`<div class="warnbox" style="margin-bottom:12px">Este pedido aún no tiene foto del comprobante de envío. <a href="#" data-act="editPedido" data-id="${p.id}">Adjuntarla</a></div>`:'')}
-    <div id="waBox">${comp?`<img class="wa-img" src="${esc(comp._pend?comp.data:(comp.thumbUrl||comp.url))}" alt="Comprobante">`:''}<div class="wa-prev" id="waTxt">${esc(pedidoMsg(p,{conFoto:share}))}</div></div>
-    ${share?`<button type="button" class="btn block wa" data-act="waShare" data-id="${p.id}" id="waShareBtn" disabled>⏳ Preparando la foto…</button>`:''}
-    <a class="btn block ${share?'ghost':'wa'}" target="_blank" rel="noopener" href="${waLink('',pedidoMsg(p))}" id="waTxtBtn">${share?'💬 Enviar solo el texto (con link de la foto)':comp?'💬 Enviar por WhatsApp (con link de la foto)':'💬 Enviar por WhatsApp'}</a>
-    ${comp&&!comp._pend?`<a class="btn block ghost" href="${esc(comp.url)}" target="_blank" rel="noopener">🧾 Ver / guardar la foto</a>`:''}
-    <small class="muted" style="display:block;text-align:center">${share?'Al tocar el botón verde elige <b>WhatsApp</b> y luego al paciente.':'Se abrirá WhatsApp: elige al paciente y envía.'}</small>`,
-  {noSubmit:true});
-  if(share){const cur=SH;blobBoleta(comp).then(b=>{if(SH!==cur)return;const btn=$('#waShareBtn');
-    if(b){cur.waFile=new File([b],`comprobante-delivery-${cliLabel(p.clienteId).replace(/\W+/g,'-')}.jpg`,{type:b.type||'image/jpeg'});btn.disabled=false;btn.textContent='📤 Enviar por WhatsApp con la foto'}
-    else{btn.remove();$('#waTxt').textContent=pedidoMsg(p);$('#waTxtBtn').className='btn block wa';toast('No se pudo preparar la foto: se enviará el link','warn')}})}
+  const F=fotosPed(id), share=F.length>0&&puedeCompartirFotos();
+  openSheet('💬 Enviar al paciente',`
+    ${F.length?`<div class="tip"><span>📸</span><p>Marca las fotos que quieres enviar. ${share?'Se envían <b>todas juntas</b> con el mensaje.':'Se enviarán como links.'}</p></div>
+      <div class="wa-fotos">${F.map((c,i)=>`<label class="wa-foto"><input type="checkbox" name="wf" value="${i}" checked><img src="${esc(c._pend?c.data:(c.thumbUrl||c.url))}" alt=""><span>${(etqInfo(c.etiqueta||'delivery')||['','📷'])[1]} ${esc(etqTxt(c.etiqueta||'delivery'))}${c._pend?' ⏳':''}</span></label>`).join('')}</div>`
+    :`<div class="warnbox" style="margin-bottom:12px">Este pedido aún no tiene fotos (producto embalado, comprobantes). <a href="#" data-act="editPedido" data-id="${p.id}">📸 Agregar fotos</a></div>`}
+    <div class="wa-prev" id="waTxt"></div>
+    ${share?`<button type="button" class="btn block wa" data-act="waShare" data-id="${p.id}" id="waShareBtn" disabled>⏳ Preparando las fotos…</button>`:''}
+    <button type="button" class="btn block ${share?'ghost':'wa'}" data-act="waTexto" data-id="${p.id}" id="waTxtBtn">${share?'💬 Enviar solo el texto (con links de las fotos)':F.length?'💬 Enviar por WhatsApp (con links de las fotos)':'💬 Enviar por WhatsApp'}</button>
+    <small class="muted" style="display:block;text-align:center">${share?'Al tocar el botón verde elige <b>WhatsApp</b> y luego al paciente.':'Se abrirá WhatsApp: elige al paciente y envía.'} Queda registrado en la trazabilidad.</small>`,
+  {noSubmit:true,waF:F,waShare:share,waBlobs:[],onInput:()=>waUpd(p)});
+  waUpd(p);
+  if(share){const cur=SH;Promise.all(F.map(c=>blobBoleta(c).catch(()=>null))).then(B=>{if(SH!==cur)return;cur.waBlobs=B;const ok=B.filter(Boolean).length,btn=$('#waShareBtn');
+    if(!ok){cur.waShare=false;btn.remove();$('#waTxtBtn').className='btn block wa';toast('No se pudieron preparar las fotos: se enviarán los links','warn')}
+    else{btn.disabled=false;if(ok<F.length)toast(`${F.length-ok} foto(s) no se pudieron preparar: irán como link`,'warn')}
+    waUpd(p)})}
 }
+function waSel(){const cur=SH;if(!cur||!cur.waF)return [];const on=$$('#shForm [name=wf]').filter(x=>x.checked).map(x=>+x.value);return on.map(i=>({c:cur.waF[i],b:cur.waBlobs[i]}))}
+function waUpd(p){
+  const cur=SH; if(!cur||!cur.waF) return; const S=waSel(), con=S.filter(x=>x.b), sin=S.filter(x=>!x.b);
+  const listo=cur.waShare&&cur.waBlobs.length;
+  $('#waTxt').textContent=listo?pedidoMsg(p,{adjuntas:con.map(x=>x.c),links:sin.map(x=>x.c)}):pedidoMsg(p,{links:S.map(x=>x.c)});
+  const btn=$('#waShareBtn'); if(btn&&listo) btn.textContent=con.length?`📤 Enviar por WhatsApp con ${con.length===1?'la foto':con.length+' fotos'}`:'📤 Enviar por WhatsApp';
+}
+function msgConLinks(p,adj,links){let t=pedidoMsg(p,{adjuntas:adj});const L=links.filter(c=>!c._pend&&c.url);if(L.length)t=t.replace('\n\n¡Saca el burro',`\n📎 Otras fotos:\n${L.map(c=>`${etqTxt(c.etiqueta||'delivery')}: ${c.url}`).join('\n')}\n\n¡Saca el burro`);return t}
+function regWa(id,m){const p=byId('Pedidos',id);if(p)saveRow('Pedidos',Object.assign({},p,{historial:[...(p.historial||[]),hEv('wa',{m})]}))}
 /* ===== COBRANZA: fechas de pedido / entrega / pago, fiados, aplazamientos y trazabilidad ===== */
 const addD=(iso,n)=>{const d=new Date((iso||today())+'T12:00');d.setDate(d.getDate()+n);return isoD(d)};
 const dDiff=(a,b)=>Math.round((new Date(a+'T12:00')-new Date(b+'T12:00'))/864e5);
@@ -638,7 +684,7 @@ function venceInfo(p){
   if(d<=3) return {c:'warn',ic:'🟡',txt:`Paga en ${d} ${pl(d,'día','días')}`,d};
   return {c:'info',ic:'📅',txt:`Paga el ${fmtDate(fc)}`,d};
 }
-const HIST={abono:'💵 Abonó',pedido:'🧾 Pedido registrado',entrega:'🚚 Entregado (pagado)',fiado:'🤝 Entregado fiado',pago:'💵 Pagó',aplazo:'📅 Aplazó el pago',compromiso:'📅 Acordó fecha de pago',recordatorio:'🔔 Se le recordó el pago',cancelado:'❌ Pedido cancelado'};
+const HIST={abono:'💵 Abonó',pedido:'🧾 Pedido registrado',entrega:'🚚 Entregado (pagado)',fiado:'🤝 Entregado fiado',pago:'💵 Pagó',aplazo:'📅 Aplazó el pago',compromiso:'📅 Acordó fecha de pago',recordatorio:'🔔 Se le recordó el pago',cancelado:'❌ Pedido cancelado',fotos:'📸 Fotos agregadas',wa:'💬 Enviado al paciente por WhatsApp',lab:'🧪 Orden enviada al laboratorio',labListo:'✅ El laboratorio lo tiene listo'};
 const hEv=(t,o)=>Object.assign({t,f:today()},o||{});
 function histHtml(p){
   const H=p.historial||[]; if(!H.length) return '';
@@ -736,11 +782,18 @@ async function api(payload, over){
   return j;
 }
 let flushing=null;
+/* Si el Apps Script todavía no tiene una hoja nueva (ej. Mensajes), esos cambios se guardan aparte
+   y se suben solos cuando se actualice el Apps Script. Así nada bloquea al resto. */
+const PARK_KEY='latigo_parked_v1'; let FALTA_BACKEND=load(PARK_KEY,[]).length>0;
 function flushOutbox(){
   if(flushing) return flushing;
   flushing=(async()=>{await 0; try{
     let ob=load(OUT_KEY,[]);
-    while(ob.length){ await api(ob[0]); ob=load(OUT_KEY,[]); ob.shift(); store(OUT_KEY,ob); }
+    while(ob.length){
+      try{ await api(ob[0]) }
+      catch(e){ if(!/Hoja no permitida|Acci[oó]n desconocida/i.test(e.message||'')) throw e;
+        const pk=load(PARK_KEY,[]); pk.push(ob[0]); store(PARK_KEY,pk); FALTA_BACKEND=true; }
+      ob=load(OUT_KEY,[]); ob.shift(); store(OUT_KEY,ob); }
   } finally { flushing=null }})();
   return flushing;
 }
@@ -756,8 +809,13 @@ async function syncAll(showMsg){
   setSync('busy');
   try{
     await flushOutbox();
-    const j=await api({action:'all'});
-    DB=normalizeDB(j.data); store(DB_KEY,DB); setSync('ok'); render(); processUploads();
+    let j=await api({action:'all'});
+    const pk=load(PARK_KEY,[]);
+    if(j.data&&('Mensajes' in j.data)){ FALTA_BACKEND=false;
+      if(pk.length){ store(PARK_KEY,[]); store(OUT_KEY,[...pk,...load(OUT_KEY,[])]); await flushOutbox(); j=await api({action:'all'}) } }
+    else FALTA_BACKEND=true;
+    { const srv=j.data||{}, nd=normalizeDB(srv); Object.keys(SCHEMA).forEach(k=>{ if(!(k in srv)) nd[k]=DB[k] }); DB=nd; }
+    store(DB_KEY,DB); setSync('ok'); render(); processUploads();
     if(showMsg) toast('Datos actualizados ✅');
   }catch(e){ setSync('err');
     if(/clave|setup/i.test(e.message)) toast('La base de datos aún no está lista. Avísale a quien instaló la app.','bad');
@@ -776,6 +834,13 @@ function saveRow(sheet,row){
   store(DB_KEY,DB);
   push({action:'save',sheet,row:serializeRow(sheet,row)});
   return row;
+}
+function saveRows(sheet,rows){
+  rows=rows.map(r=>normalizeRow(sheet,r)); const arr=DB[sheet];
+  rows.forEach(row=>{const i=arr.findIndex(x=>x.id===row.id); if(i>=0) arr[i]=row; else arr.push(row)});
+  store(DB_KEY,DB);
+  for(let i=0;i<rows.length;i+=150) push({action:'saveMany',sheet,rows:rows.slice(i,i+150).map(r=>serializeRow(sheet,r))});
+  return rows;
 }
 function delRow(sheet,id){
   DB[sheet]=DB[sheet].filter(x=>x.id!==id); store(DB_KEY,DB);
@@ -847,6 +912,8 @@ function alertas(){
   if(DB.Produccion.length) DB.Productos.forEach(p=>{const s=stockProd(p.id); if(s<=0) a.push(['bad',`Sin stock de <b>${esc(prodName(p))}</b> (${fmtNum(s,0)} ${esc(plural(p.unidad,s))})`,`<button class="btn sm" data-act="newLote" data-prod="${p.id}">🏭 Producir</button>`])});
   {const fal=faltantes().all.length; if(fal) a.push(['warn',`Hay <b>${fal}</b> compra(s) o envío(s) de los últimos 30 días sin boleta`,`<button class="btn sm ghost" data-act="verFaltan">📎 Ver</button>`]);}
   const pend=DB.Pedidos.filter(p=>p.estado==='Pendiente');
+  {const sl=pend.filter(p=>!labEst(p)); if(sl.length) a.push(['warn',`<b>${sl.length}</b> pedido(s) sin avisar al <b>laboratorio</b>`,`<button class="btn sm wa" data-act="goLab">🧪 Enviar</button>`]);
+   const lt=pend.filter(p=>labEst(p)==='Enviado'&&p.labPara&&p.labPara<=today()); if(lt.length) a.push(['info',`<b>${lt.length}</b> pedido(s) del laboratorio para hoy o antes: ¿ya están listos?`,`<button class="btn sm ghost" data-act="goLab">Ver</button>`]);}
   if(pend.length) a.push(['info',`Tienes <b>${pend.length}</b> pedido(s) por entregar`,`<button class="btn sm ghost" data-act="goPed" data-f="pend">Ver</button>`]);
   const cob=DB.Pedidos.filter(porCobrar), T=today(), venc=cob.filter(p=>p.fechaCompromiso&&p.fechaCompromiso<T), hoy=cob.filter(p=>p.fechaCompromiso===T), nDeu=new Set(cob.map(p=>p.clienteId)).size;
   if(venc.length) a.push(['bad',`<b>${venc.length}</b> pago(s) vencido(s) por <b>${money(sum(venc,saldo))}</b>`,`<button class="btn sm" data-act="goCobranza">🔔 Cobrar</button>`]);
@@ -860,10 +927,11 @@ function waNum(n){let d=String(n||'').replace(/\D/g,''); if(d.length===9&&d[0]==
 const waLink=(n,msg)=>`https://wa.me/${n?waNum(n):''}${msg?'?text='+encodeURIComponent(msg):''}`;
 function pedidoMsg(p,o={}){
   const lines=(p.items||[]).map(it=>`• ${fmtNum(it.cantidad,0)} x ${prodName(byId('Productos',it.productoId))} = ${money(it.cantidad*it.precio)}`).join('\n');
-  const comp=compsDe('Pedidos',p.id)[0];
   const del=p.cobroEnvio?`\n🚚 Delivery: ${money(p.cobroEnvio)}`:'';
-  const comprob=o.conFoto?'\n🧾 Te adjuntamos el comprobante del delivery.':(comp&&comp.url?`\n🧾 Comprobante del delivery: ${comp.url}`:'');
-  return `Hola 👋, te escribimos de ${cfg.negocio} 🥃\n\nPedido del ${fmtDate(p.fecha)} (${cliLabel(p.clienteId)}):\n${lines}${del}${p.fechaEntrega?`\n🚚 Entrega: ${fmtDate(p.fechaEntrega)}`:''}${!p.pagado&&p.fechaCompromiso?`\n📅 Fecha de pago: ${fmtDate(p.fechaCompromiso)}`:''}\n\n*Total: ${money(p.total)}*${zonaTxt(p)?`\n📍 Destino: ${zonaTxt(p)}`:''}${p.direccionEntrega?` · ${p.direccionEntrega}`:''}${p.cobroEnvio||envioCosto(p)?comprob:''}${p.pagado?'\n✅ Pago recibido, ¡gracias!':''}\n\n¡Saca el burro que tienes dentro! 🔥`;
+  let fotos='';
+  if(o.adjuntas&&o.adjuntas.length){const L=o.adjuntas;fotos=`\n\n📸 Te adjuntamos ${L.length===1?'la foto':L.length+' fotos'}: ${[...new Set(L.map(c=>etqTxt(c.etiqueta||'delivery').toLowerCase()))].join(', ')}.`}
+  else{const L=(o.links||fotosPed(p.id)).filter(c=>!c._pend&&c.url);if(L.length)fotos='\n\n📸 Fotos de tu pedido:\n'+L.map(c=>`${(etqInfo(c.etiqueta||'delivery')||['','📷'])[1]} ${etqTxt(c.etiqueta||'delivery')}: ${c.url}`).join('\n')}
+  return `Hola 👋, te escribimos de ${cfg.negocio} 🥃\n\nPedido del ${fmtDate(p.fecha)} (${cliLabel(p.clienteId)}):\n${lines}${del}${p.fechaEntrega?`\n🚚 Entrega: ${fmtDate(p.fechaEntrega)}`:''}${!p.pagado&&p.fechaCompromiso?`\n📅 Fecha de pago: ${fmtDate(p.fechaCompromiso)}`:''}\n\n*Total: ${money(p.total)}*${zonaTxt(p)?`\n📍 Destino: ${zonaTxt(p)}`:''}${p.direccionEntrega?` · ${p.direccionEntrega}`:''}${fotos}${p.pagado?'\n✅ Pago recibido, ¡gracias!':''}\n\n¡Saca el burro que tienes dentro! 🔥`;
 }
 
 /* ---------- Componentes ---------- */
@@ -950,14 +1018,235 @@ VIEWS.inicio=()=>{
   `;
 };
 function quickGrid(){
-  return `<div class="quick">${[['newPedido','🧾','Nuevo pedido'],['newLote','🏭','Registrar producción'],['newCompra','🛒','Compré insumos'],['newGasto','💸','Anotar un gasto'],['goClientes','👥','Mis pacientes'],['newBoleta','📎','Subir boleta']]
+  return `<div class="quick">${[['newPedido','🧾','Nuevo pedido'],['newLote','🏭','Registrar producción'],['newCompra','🛒','Compré insumos'],['newGasto','💸','Anotar un gasto'],['goClientes','👥','Mis pacientes'],['newBoleta','📎','Subir boleta'],['newMsg','💬','Anotar mensaje'],['goLab','🧪','Laboratorio'],['goCobranza','💰','Cobranza']]
     .map(([a,e,l])=>`<button type="button" class="qa" data-act="${a}"><span class="e">${e}</span>${l}</button>`).join('')}</div>`;
+}
+
+/* ===================== LABORATORIO (destilería) =====================
+   El dueño vende; el laboratorio prepara. Cada pedido por entregar puede mandarse
+   al laboratorio por WhatsApp: "Preparar 8 botellas … para el Paciente N° 2".
+   Estado en el pedido: labEstado '' (sin avisar) → 'Enviado' (preparando) → 'Listo'. */
+/* Laboratoristas: lista de contactos (nombre + WhatsApp) guardada en Ajustes. Puede haber 1, 2, 3 o más. */
+function labs(){
+  if(!Array.isArray(cfg.labs)){cfg.labs=cfg.labWa||cfg.labNombre?[{id:'l1',nombre:cfg.labNombre||'Laboratorio',wa:cfg.labWa||''}]:[]}
+  return cfg.labs;
+}
+const labById=id=>labs().find(l=>l.id===id);
+const labTxt=l=>l?`${l.nombre||'Laboratorista'}${l.wa?' · '+l.wa:''}`:'';
+function labRow(l={}){return `<div class="labrow"><input type="hidden" name="labId" value="${esc(l.id||'l'+uid())}"><input name="labNom" value="${esc(l.nombre||'')}" placeholder="Nombre (Ej: Don Julio)" autocomplete="off"><input name="labTel" value="${esc(l.wa||'')}" type="tel" inputmode="tel" placeholder="WhatsApp (987 654 321)"><button type="button" class="btn sm ghost" data-act="delLabRow" aria-label="Quitar">✕</button></div>`}
+function labsEditor(){return `<div class="subcard"><b>🧪 Laboratoristas</b><small class="muted" style="display:block;margin:2px 0 8px">A ellos les envías por WhatsApp las órdenes de preparación. Puedes tener los que quieras.</small>
+  <div id="labRows">${(labs().length?labs():[{}]).map(labRow).join('')}</div>
+  <button type="button" class="btn sm ghost" data-act="addLabRow">+ Agregar laboratorista</button></div>`}
+function leerLabs(f){
+  const ids=$$('[name=labId]',f).map(x=>x.value), ns=$$('[name=labNom]',f).map(x=>x.value.trim()), ts=$$('[name=labTel]',f).map(x=>x.value.trim());
+  return ids.map((id,k)=>({id,nombre:ns[k],wa:ts[k]})).filter(l=>l.nombre||l.wa).map((l,k)=>Object.assign(l,{nombre:l.nombre||`Laboratorista ${k+1}`}));
+}
+const enLab=p=>p.estado==='Pendiente';
+const labEst=p=>p.labEstado||'';
+function labItems(p){return (p.items||[]).map(it=>`• ${fmtNum(it.cantidad,0)} ${uLbl(it.productoId,num(it.cantidad))} de ${prodName(byId('Productos',it.productoId))}`).join('\n')}
+function labResumen(p){return (p.items||[]).map(it=>`${fmtNum(it.cantidad,0)} ${uLbl(it.productoId,num(it.cantidad))} de ${prodName(byId('Productos',it.productoId))}`).join(', ')}
+function msgLab(L,o={}){
+  const one=L.length===1, para=o.para, nota=o.nota, lab=o.lab;
+  const bloque=p=>`👤 *${cliLabel(p.clienteId)}*${L.length>1&&(p.labPara||para)?` · para el ${fmtDate(p.labPara||para)}`:''}\n${labItems(p)}${p.labNota&&L.length>1?`\n📝 ${p.labNota}`:''}`;
+  return `🧪 *ORDEN DE PREPARACIÓN* · ${cfg.negocio}\n\nHola${lab&&lab.nombre&&!/^Laboratorista \d+$/.test(lab.nombre)?' '+lab.nombre:''} 👋, ${one?`por favor prepara para el *${cliLabel(L[0].clienteId)}*:\n${labItems(L[0])}`:`por favor prepara estos ${L.length} pedidos:\n\n${L.map(bloque).join('\n\n')}`}${one&&para?`\n\n📅 Lo necesito para el *${fmtDate(para)}*`:''}${one&&nota?`\n📝 ${nota}`:''}${!one&&para?`\n\n📅 Para el *${fmtDate(para)}*`:''}${!one&&nota?`\n📝 ${nota}`:''}\n\nAvísame cuando esté listo ✅`;
+}
+function badgeLab(p){
+  if(!enLab(p)) return '';
+  const e=labEst(p);
+  return e==='Listo'?'<span class="badge ok">🧪 Listo en laboratorio</span>':e==='Enviado'?`<span class="badge gold">🧪 Preparando${p.labA?' · '+esc(p.labA):''}${p.labPara?' · para el '+fmtDate(p.labPara).replace(/ \d{4}$/,''):''}</span>`:'<span class="badge">🧪 Sin avisar al laboratorio</span>';
+}
+function marcarLab(p,o){
+  const H=[...(p.historial||[])]; H.push(hEv('lab',{a:o.para||'',m:o.lab?o.lab.nombre:'',n:o.nota||''}));
+  saveRow('Pedidos',Object.assign({},p,{labEstado:'Enviado',labA:o.lab?o.lab.nombre:'',labFecha:today(),labPara:o.para||'',labNota:o.nota||'',historial:H}));
+}
+function formOrdenLab(ids,o={}){
+  const L=ids.map(id=>byId('Pedidos',id)).filter(Boolean);
+  if(!L.length) return;
+  const reenv=L.some(p=>labEst(p));
+  const para0=L.length===1?(L[0].labPara||''):'', nota0=L.length===1?(L[0].labNota||''):'';
+  openSheet(L.length===1?'🧪 Avisar al laboratorio':`🧪 Avisar al laboratorio (${L.length} pedidos)`,`
+    ${o.nuevo?`<div class="tip"><span>✅</span><p>Pedido anotado. ¿Le pides al laboratorio que lo prepare?</p></div>`:''}
+    ${reenv?`<div class="warnbox" style="margin-bottom:12px">${L.length===1?`Ya se envió al laboratorio el <b>${fmtDate(L[0].labFecha)}</b>. Puedes reenviarlo.`:'Algunos ya se habían enviado; se reenviarán.'}</div>`:''}
+    ${labs().length?`<div class="subcard"><b>👨‍🔬 ¿A quién se lo envías?</b><div class="labpick">${labs().map(l=>`<label class="check"><input type="radio" name="labSel" value="${esc(l.id)}" ${l.id===(labById(cfg.labUlt)?cfg.labUlt:labs()[0].id)?'checked':''}><span>${esc(l.nombre)}<br><small class="muted" style="font-weight:600">${l.wa?esc(l.wa):'Sin número: elegirás el contacto en WhatsApp'}</small></span></label>`).join('')}</div>
+        <a href="#" data-act="labConfig" class="sm">✏️ Agregar o cambiar laboratoristas</a></div>`
+      :`<div class="subcard"><b>👨‍🔬 Laboratorista</b><small class="muted" style="display:block;margin:2px 0 8px">Se guarda para la próxima. Luego puedes agregar más en ⚙️ Ajustes.</small><div class="row2">${field('Nombre',inp('nuevoNom','','placeholder="Ej: Don Julio"'))}${field('WhatsApp',inp('nuevoTel','','type="tel" inputmode="tel" placeholder="987 654 321"'))}</div></div>`}
+    <div class="row2">${field('📅 ¿Para cuándo?',inp('para',para0,'type="date"'))}${field('📝 Nota para el laboratorio',inp('nota',nota0,'placeholder="Ej: con etiqueta nueva"'))}</div>
+    <div class="wa-prev" id="labTxt"></div>
+    `,
+  {submitText:'💬 Enviar al laboratorio', labIds:ids,
+   onOpen:f=>{SH.onInput(null,f)},
+   onInput:(e,f)=>{const el=f.elements, lab=el.labSel?labById((f.querySelector('[name=labSel]:checked')||{}).value):{nombre:(el.nuevoNom&&el.nuevoNom.value.trim())||''};$('#labTxt').textContent=msgLab(L,{para:el.para.value,nota:el.nota.value.trim(),lab})},
+   onSubmit:d=>{
+     let lab=labById(d.labSel);
+     if(!labs().length&&(d.nuevoNom||d.nuevoTel)){lab={id:'l'+uid(),nombre:d.nuevoNom||'Laboratorista 1',wa:d.nuevoTel||''};cfg.labs=[lab]}
+     if(lab) cfg.labUlt=lab.id; guardarCfg();
+     window.open(waLink(lab?lab.wa:'',msgLab(L,{para:d.para,nota:d.nota,lab})),'_blank');
+     L.forEach(p=>marcarLab(byId('Pedidos',p.id)||p,{lab,para:d.para||p.labPara||'',nota:L.length===1?d.nota:(p.labNota||d.nota)}));
+     toast((L.length===1?'🧪 Orden enviada':`🧪 ${L.length} órdenes enviadas`)+(lab?' a '+lab.nombre:' al laboratorio'));render()}});
+}
+function ordenLabLista(id){
+  const p=byId('Pedidos',id); if(!p) return;
+  saveRow('Pedidos',Object.assign({},p,{labEstado:'Listo',historial:[...(p.historial||[]),hEv('labListo')]}));
+  toast('✅ Listo para entregar');render();
+}
+function formLabConfig(){
+  const volver=SH&&SH.labIds;
+  openSheet('🧪 Laboratoristas',`${labsEditor()}<small class="muted" style="display:block;text-align:center">Se guardan en este celular.</small>`,
+  {onSubmit:(d,f)=>{cfg.labs=leerLabs(f);guardarCfg();toast(`Guardado ✅ (${cfg.labs.length} ${pl(cfg.labs.length,'laboratorista','laboratoristas')})`);render();if(volver)formOrdenLab(volver)}});
+}
+function guardarCfg(){store(CFG_KEY,{negocio:cfg.negocio,moneda:cfg.moneda,maxClientes:cfg.maxClientes,labs:labs(),labUlt:cfg.labUlt||''})}
+function vOrdenesLab(){
+  const P=DB.Pedidos.filter(enLab).sort((a,b)=>((a.labPara||a.fecha)+a.id).localeCompare((b.labPara||b.fecha)+b.id));
+  const sin=P.filter(p=>!labEst(p)), prep=P.filter(p=>labEst(p)==='Enviado'), listo=P.filter(p=>labEst(p)==='Listo');
+  const T=today();
+  const card=p=>`<div class="item"><div class="item-top"><div><b data-act="verCliente" data-id="${p.clienteId}" style="cursor:pointer">${esc(cliLabel(p.clienteId))}</b><div class="muted sm">${esc(labResumen(p))||'Sin productos'}</div></div><div class="muted sm" style="text-align:right">🧾 ${fmtDate(p.fecha).replace(/ \d{4}$/,'')}</div></div>
+    <div class="badges">${badgeLab(p)}${labEst(p)==='Enviado'&&p.labPara&&p.labPara<T?'<span class="badge bad">⏰ Ya pasó la fecha</span>':''}${labEst(p)&&p.labFecha?`<span class="badge">Enviado ${fmtDate(p.labFecha).replace(/ \d{4}$/,'')}</span>`:''}</div>
+    ${p.labNota?`<div class="muted sm">📝 ${esc(p.labNota)}</div>`:''}
+    <div class="actions">${!labEst(p)?`<button type="button" class="btn sm wa" data-act="labEnviar" data-id="${p.id}">🧪 Enviar al lab</button>`:''}
+      ${labEst(p)==='Enviado'?`<button type="button" class="btn sm ok" data-act="labListo" data-id="${p.id}">✅ Ya está listo</button><button type="button" class="btn sm ghost" data-act="labEnviar" data-id="${p.id}">↻ Reenviar</button>`:''}
+      ${labEst(p)==='Listo'?`<button type="button" class="btn sm ok" data-act="pedEntregado" data-id="${p.id}">🚚 Entregar</button>`:''}
+      <button type="button" class="btn sm ghost" data-act="editPedido" data-id="${p.id}">Ver pedido</button></div></div>`;
+  const tot=L=>{const m={};L.forEach(p=>(p.items||[]).forEach(it=>{const k=it.productoId;m[k]=(m[k]||0)+num(it.cantidad)}));return Object.entries(m).map(([k,n])=>`<b>${fmtNum(n,0)}</b> ${esc(uLbl(k,n))} de ${esc(prodName(byId('Productos',k)))}`).join(' · ')};
+  if(!P.length) return `${tip('Aquí le pides al <b>laboratorio</b> que prepare cada pedido por WhatsApp, y ves qué está preparando y qué ya está listo.')}${empty('🧪','No hay pedidos por preparar','Cuando anotes un pedido por entregar, aparecerá aquí para enviarlo al laboratorio.',`<button type="button" class="btn" data-act="newPedido">+ Nuevo pedido</button>`)}`;
+  return `${tip('Le pides al <b>laboratorio</b> por WhatsApp que prepare cada pedido. Cuando te avise que está listo, márcalo con <b>✅ Ya está listo</b>.')}
+  <div class="btn-row" style="margin-bottom:12px"><button type="button" class="btn sm ghost" data-act="labConfig">👨‍🔬 ${labs().length?labs().length+' '+pl(labs().length,'laboratorista','laboratoristas')+': '+esc(labs().map(l=>l.nombre).join(', ')):'Agregar laboratoristas'}</button></div>
+  ${sin.length?`<h3 class="sec">📤 Sin avisar (${sin.length})</h3><div class="calc" style="margin-top:0">Total a preparar: ${tot(sin)}</div>
+    ${sin.length>1?`<button type="button" class="btn block wa" data-act="labTodos" style="margin-bottom:12px">🧪 Enviar los ${sin.length} pedidos en un solo mensaje</button>`:''}<div class="list">${sin.map(card).join('')}</div>`:''}
+  ${prep.length?`<h3 class="sec">⚗️ Preparando (${prep.length})</h3><div class="calc" style="margin-top:0">En preparación: ${tot(prep)}</div><div class="list">${prep.map(card).join('')}</div>`:''}
+  ${listo.length?`<h3 class="sec">✅ Listos para entregar (${listo.length})</h3><div class="list">${listo.map(card).join('')}</div>`:''}`;
+}
+
+/* ===================== MENSAJES DE LOS PACIENTES =====================
+   WhatsApp no deja que otra app lea tus chats, así que los mensajes se GUARDAN desde la app:
+   - Pegando el mensaje (copiar en WhatsApp → pegar aquí), o varios a la vez.
+   - Importando el chat completo (WhatsApp → Exportar chat → Sin archivos).
+   - Compartiendo a "El Látigo" un chat exportado o una captura (Android, app instalada).
+   Solo se guarda el texto, la fecha/hora y si lo escribió el paciente o tú: ni nombres ni teléfonos. */
+const msgsDe=cid=>DB.Mensajes.filter(m=>m.clienteId===cid).sort((a,b)=>(a.fecha+(a.hora||'')+a.creado+a.id).localeCompare(b.fecha+(b.hora||'')+b.creado+b.id));
+const nowHM=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+function burbuja(m,edit=true){
+  const ped=m.pedidoId&&byId('Pedidos',m.pedidoId);
+  return `<div class="bub ${m.de==='yo'?'yo':''}">${(m.fotos||[]).map(f=>`<a href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.thumb||f.url)}" alt="" loading="lazy"></a>`).join('')}${pendDe('Mensajes',m.id).map(q=>`<img src="${q.data}" alt="" style="opacity:.55">`).join('')}${m.texto?`<p>${esc(m.texto)}</p>`:''}<small>${m.de==='yo'?'Tú':'Paciente'}${m.hora?' · '+esc(m.hora):''}${ped?` · 🧾 pedido del ${fmtDate(ped.fecha).replace(/ \d{4}$/,'')}`:''}</small>${edit?`<button type="button" class="bub-x" data-act="editMsg" data-id="${m.id}" aria-label="Editar">✏️</button>`:''}</div>`;
+}
+function chatHtml(L,edit=true){let d0='';return `<div class="chat">${L.map(m=>{const h=m.fecha!==d0?`<span class="chat-day">${fmtDate(m.fecha)}</span>`:'';d0=m.fecha;return h+burbuja(m,edit)}).join('')}</div>`}
+const avisoBackend=()=>FALTA_BACKEND?`<div class="warnbox" style="margin-bottom:12px">Los mensajes se están guardando <b>en este celular</b>. Para que pasen a Látigo_BD falta actualizar el Apps Script (lo hace quien instaló la app). Se subirán solos.</div>`:'';
+function verMensajes(cid){
+  const n=cliNum(cid), L=msgsDe(cid);
+  openSheet(`💬 Mensajes · Paciente N° ${n}`,`${avisoBackend()}
+    <div class="btn-row"><button type="button" class="btn sm" data-act="newMsg" data-cli="${cid}">+ Anotar mensaje</button><button type="button" class="btn sm ghost" data-act="importChat" data-cli="${cid}">📥 Importar chat</button></div>
+    ${L.length?chatHtml(L):empty('💬','Todavía no hay mensajes','Copia un mensaje en WhatsApp y pégalo aquí con “+ Anotar mensaje”, o importa el chat completo.')}`,
+  {noSubmit:true,msgCid:cid,onOpen:()=>{const b=$('#shBody');b.scrollTop=b.scrollHeight}});
+}
+function pedOpts(cid,val){return [['','— Ninguno —'],...DB.Pedidos.filter(p=>p.clienteId===cid).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,30).map(p=>[p.id,`${fmtDate(p.fecha)} · ${labResumen(p)} · ${money(p.total)}`])].map(([v,l])=>`<option value="${esc(v)}" ${v===(val||'')?'selected':''}>${esc(l)}</option>`).join('')}
+function formMensaje(m={},o={}){
+  const rid=m.id||'m'+uid(), cid0=m.clienteId||o.cli||'', volver=SH&&SH.msgCid;
+  const cliOpts=[['','— Elige el N° de paciente —']];for(let n=1;n<=maxCli();n++) cliOpts.push([cliId(n),`N° ${n}${isReg(n)?'  ✓':''}`]);
+  openSheet(m.id?'✏️ Editar mensaje':'💬 Anotar mensaje',`${avisoBackend()}
+    ${field('Paciente *',sel('clienteId',cliOpts,cid0,'required'))}
+    <div class="row2"><label class="check"><input type="radio" name="de" value="paciente" ${m.de!=='yo'?'checked':''}><span>🙋 Lo escribió el paciente</span></label><label class="check"><input type="radio" name="de" value="yo" ${m.de==='yo'?'checked':''}><span>👤 Lo escribí yo</span></label></div>
+    <label class="field"><span>Mensaje</span><textarea name="texto" rows="4" placeholder="Copia el mensaje en WhatsApp y pégalo aquí">${esc(m.texto||o.texto||'')}</textarea></label>
+    <button type="button" class="btn sm ghost" data-act="pegarMsg" style="margin:-4px 0 10px">📋 Pegar lo copiado</button>
+    <div id="multiHint"></div>
+    <div class="row2">${field('Fecha',inp('fecha',m.fecha||today(),'type="date" required'))}${field('Hora',inp('hora',m.hora||nowHM(),'type="time"'))}</div>
+    <label class="field"><span>¿Es sobre algún pedido? (opcional)</span><select name="pedidoId">${pedOpts(cid0,m.pedidoId||o.pedidoId)}</select></label>
+    ${(m.fotos||[]).length?`<div class="adj-list" style="margin-bottom:8px">${m.fotos.map(f=>`<a class="adj-it" href="${esc(f.url)}" target="_blank" rel="noopener"><img src="${esc(f.thumb||f.url)}" alt=""></a>`).join('')}</div>`:''}
+    <div class="adj"><div class="adj-h"><b>📷 Captura o foto (opcional)</b></div><div class="adj-list" id="adjList"></div>
+      <div class="btn-row"><label class="btn sm ghost">📷 Elegir captura o foto<input type="file" accept="image/*" multiple data-adj hidden></label></div>
+      <small class="muted">Útil si el paciente mandó una foto o un audio (toma captura de la pantalla).</small></div>`,
+  {submitText:'Guardar mensaje',msgCid:volver,
+   onOpen:f=>{if(o.files&&o.files.length)(async()=>{const cur=SH;for(const fl of o.files){try{cur.adj.push(await prepararArchivo(fl))}catch(e){}}if(SH===cur)renderAdjNuevos()})();SH.onInput({target:f.elements.texto},f)},
+   onInput:(e,f)=>{const t=e&&e.target;
+     if(t&&t.name==='clienteId'){f.elements.pedidoId.innerHTML=pedOpts(t.value,'')}
+     if(t&&t.name==='texto'){const P=parseChat(t.value);$('#multiHint').innerHTML=P.msgs.length>=2?`<div class="tip"><span>📥</span><p>Pegaste <b>${P.msgs.length} mensajes</b> del chat. <a href="#" data-act="pegadoAImport">Guardarlos uno por uno con su fecha y hora</a></p></div>`:''}},
+   onSubmit:(d,f)=>{
+     const nuevas=(SH.adj||[]).length;
+     if(!d.texto&&!nuevas&&!(m.fotos||[]).length){toast('Escribe o pega el mensaje, o agrega una captura','bad');return false}
+     saveRow('Mensajes',Object.assign({},m,{id:rid,fecha:d.fecha||today(),hora:d.hora||'',clienteId:d.clienteId,de:d.de||'paciente',texto:d.texto,pedidoId:d.pedidoId||'',fotos:m.fotos||[],origen:m.origen||(o.origen||'manual'),creado:m.creado||new Date().toISOString()}));
+     encolarAdj({tipo:'Mensaje',refTipo:'Mensajes',refId:rid,fecha:d.fecha||today(),monto:0,proveedor:'',nota:'',referencia:''});
+     toast('💬 Mensaje guardado');render(); if(volver===d.clienteId||(!volver&&o.verDespues)){verMensajes(d.clienteId);return}},
+   onDelete:m.id?async()=>{if(!await ask('¿Eliminar este mensaje?'))return;delRow('Mensajes',m.id);toast('Mensaje eliminado');render();if(volver)verMensajes(volver);else closeSheet()}:null});
+}
+/* ---- Leer chats copiados o exportados de WhatsApp (Android y iPhone, formato 12 h o 24 h) ---- */
+function parseChat(txt){
+  txt=String(txt||'').replace(/[‎‏‪-‮﻿]/g,'').replace(/[  ]/g,' ').replace(/\r\n?/g,'\n');
+  const AP='\\s*([ap])?\\.?\\s*m?\\.?';
+  const RA=new RegExp('^\\[?(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{2,4}),?\\s+(\\d{1,2}):(\\d{2})(?::\\d{2})?'+AP+'\\]?\\s*(?:[-–]\\s*)?([^:\\n]{1,80}?):\\s?(.*)$','i');
+  const RB=new RegExp('^\\[(\\d{1,2}):(\\d{2})(?::\\d{2})?'+AP+',\\s*(\\d{1,2})[/.-](\\d{1,2})[/.-](\\d{2,4})\\]\\s*([^:\\n]{1,80}?):\\s?(.*)$','i');
+  const RD=/^\[?\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4},?\s+\d{1,2}:\d{2}|^\[\d{1,2}:\d{2}[^\]]*,\s*\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}\]/;
+  const raw=[]; let cur=null;
+  txt.split('\n').forEach(line=>{
+    let m=RA.exec(line), r=null;
+    if(m) r={a:+m[1],b:+m[2],y:m[3],h:+m[4],mi:m[5],ap:m[6],au:m[7].trim(),t:m[8]};
+    else if((m=RB.exec(line))) r={h:+m[1],mi:m[2],ap:m[3],a:+m[4],b:+m[5],y:m[6],au:m[7].trim(),t:m[8]};
+    if(r){cur=r;raw.push(r)} else if(RD.test(line)) cur=null; else if(cur) cur.t+='\n'+line;
+  });
+  const md=raw.some(r=>r.b>12)&&!raw.some(r=>r.a>12);
+  const msgs=raw.map(r=>{let h=r.h; if(r.ap){const pm=/p/i.test(r.ap); if(pm&&h<12)h+=12; if(!pm&&h===12)h=0}
+    const d=md?r.b:r.a, mo=md?r.a:r.b, y=r.y.length===2?'20'+r.y:r.y;
+    let t=r.t.trim(); if(/^<?[^<>]*omitid[oa]>?$|^<?[^<>]*omitted>?$/i.test(t)) t='📷 (foto, audio o archivo: no incluido)';
+    return {fecha:`${y}-${pad(mo)}-${pad(d)}`,hora:`${pad(h)}:${r.mi}`,autor:r.au,texto:t}}).filter(x=>x.texto&&/^\d{4}-\d{2}-\d{2}$/.test(x.fecha));
+  const cnt={}; msgs.forEach(x=>cnt[x.autor]=(cnt[x.autor]||0)+1);
+  return {msgs,autores:Object.keys(cnt).map(n=>({n,c:cnt[n]})).sort((a,b)=>b.c-a.c)};
+}
+const AUT_KEY='latigo_wa_autores';
+function formImportarChat(o={}){
+  const volver=SH&&SH.msgCid, mapa=load(AUT_KEY,{});
+  const cliOpts=[['','— Elige el N° de paciente —']];for(let n=1;n<=maxCli();n++) cliOpts.push([cliId(n),`N° ${n}${isReg(n)?'  ✓':''}`]);
+  openSheet('📥 Importar chat de WhatsApp',`${avisoBackend()}
+    <div class="tip"><span>💡</span><p>En WhatsApp abre el chat del paciente → ⋮ (o su nombre en iPhone) → <b>Más → Exportar chat → Sin archivos</b>, y elige <b>El Látigo</b> o guárdalo en Archivos. También puedes copiar varios mensajes y pegarlos aquí.</p></div>
+    <label class="btn sm ghost" style="margin-bottom:10px">📄 Elegir archivo del chat (.txt)<input type="file" accept=".txt,text/plain" data-chat hidden></label>
+    <label class="field"><span>…o pega aquí el chat</span><textarea name="chat" rows="4" placeholder="[8/10/26, 14:35] Nombre: Hola, ¿mañana me llega?">${esc(o.texto||'')}</textarea></label>
+    <div id="impBox"></div>`,
+  {submitText:'Guardar mensajes',msgCid:volver,
+   onOpen:f=>SH.onInput(null,f),
+   onInput:(e,f)=>{const t=e&&e.target; if(t&&(t.name==='yo'||t.name==='clienteId')) return impResumen(f);
+     const P=parseChat(f.elements.chat.value); SH.imp=P;
+     if(!P.msgs.length){$('#impBox').innerHTML=f.elements.chat.value.trim()?'<div class="warnbox">No reconozco mensajes de WhatsApp en ese texto. Copia los mensajes desde el chat o usa “Exportar chat”.</div>':'';return}
+     const yo0=P.autores.find(a=>a.n===load('latigo_wa_yo',''))||P.autores.find(a=>!mapa[a.n])||P.autores[P.autores.length-1];
+     const otro=P.autores.find(a=>a!==yo0&&mapa[a.n]), cid=o.cid||(otro&&mapa[otro.n])||'';
+     $('#impBox').innerHTML=`<div class="subcard"><b>👤 ¿Cuál de estos eres tú?</b><div class="labpick">${P.autores.map(a=>`<label class="check"><input type="radio" name="yo" value="${esc(a.n)}" ${a===yo0?'checked':''}><span>${esc(a.n)} <small class="muted">(${a.c} mensajes)</small></span></label>`).join('')}</div><small class="muted">Los demás se guardan como mensajes del paciente. Los nombres no se guardan.</small></div>
+       ${field('¿De qué paciente es este chat? *',sel('clienteId',cliOpts,cid,'required'))}<div id="impRes"></div>`;
+     impResumen(f)},
+   onSubmit:(d,f)=>{
+     const R0=impCalc(f); if(!d.clienteId){toast('Elige el número del paciente','bad');return false}
+     if(!R0.nuevos.length){toast('No hay mensajes nuevos para guardar','warn');return false}
+     store('latigo_wa_yo',d.yo||''); const mp=load(AUT_KEY,{}); (SH.imp.autores||[]).forEach(a=>{if(a.n!==d.yo)mp[a.n]=d.clienteId}); store(AUT_KEY,mp);
+     const ahora=new Date().toISOString();
+     saveRows('Mensajes',R0.nuevos.map((x,k)=>({id:'m'+uid()+k,fecha:x.fecha,hora:x.hora,clienteId:d.clienteId,de:x.autor===d.yo?'yo':'paciente',texto:x.texto,fotos:[],pedidoId:'',origen:'chat',creado:ahora})));
+     toast(`💬 ${R0.nuevos.length} mensajes guardados`);render();verMensajes(d.clienteId);}});
+}
+function impCalc(f){
+  const P=(SH&&SH.imp)||{msgs:[]}, yo=(f.querySelector('[name=yo]:checked')||{}).value, cid=f.elements.clienteId?f.elements.clienteId.value:'';
+  const ya=new Set(DB.Mensajes.filter(m=>m.clienteId===cid).map(m=>[m.fecha,m.hora,m.de,m.texto].join('|')));
+  const nuevos=P.msgs.filter(x=>!ya.has([x.fecha,x.hora,x.autor===yo?'yo':'paciente',x.texto].join('|')));
+  return {P,yo,cid,nuevos,rep:P.msgs.length-nuevos.length};
+}
+function impResumen(f){
+  const el=$('#impRes'); if(!el) return; const R0=impCalc(f); if(!R0.P.msgs.length){el.innerHTML='';return}
+  const prev=R0.nuevos.slice(-4).map(x=>({fecha:x.fecha,hora:x.hora,de:x.autor===R0.yo?'yo':'paciente',texto:x.texto}));
+  el.innerHTML=`<div class="calc" style="margin-top:0"><div class="calc-row"><span>Mensajes encontrados</span><b>${R0.P.msgs.length}</b></div><div class="calc-row"><span>Del</span><b>${fmtDate(R0.P.msgs[0].fecha)} al ${fmtDate(R0.P.msgs[R0.P.msgs.length-1].fecha)}</b></div>${R0.rep?`<div class="calc-row"><span>Ya estaban guardados</span><b>${R0.rep}</b></div>`:''}<div class="calc-row" style="color:var(--ok)"><span>Se guardarán</span><b>${R0.nuevos.length}</b></div></div>
+    ${prev.length?`<small class="muted">Últimos mensajes:</small>${chatHtml(prev,false)}`:''}`;
+}
+/* ---- Recibir lo que se comparte a la app desde WhatsApp u otra app (Android, app instalada) ---- */
+async function leerCompartido(){
+  if(!/[?&]compartido=1/.test(location.search)) return;
+  history.replaceState(null,'',location.pathname);
+  try{
+    const c=await caches.open('latigo-share'), mr=await c.match('__share/meta'); if(!mr) return;
+    const meta=await mr.json(), files=[];
+    for(const f of meta.files||[]){const r=await c.match(f.key);if(r)files.push(new File([await r.blob()],f.name,{type:f.type}))}
+    await Promise.all((await c.keys()).map(k=>c.delete(k)));
+    const txt=files.find(f=>/text\/plain|\.txt$/i.test(f.type+' '+f.name)), imgs=files.filter(f=>/^image\//.test(f.type));
+    let texto=txt?await txt.text():[meta.title,meta.text,meta.url].filter(Boolean).join('\n').trim();
+    if(parseChat(texto).msgs.length>=2) return formImportarChat({texto});
+    formMensaje({},{texto,files:imgs,origen:'compartido',verDespues:1});
+  }catch(e){toast('No se pudo leer lo compartido','warn')}
 }
 
 /* ===================== VENTAS ===================== */
 VIEWS.ventas=()=>{
   const s=route.sub.ventas;
-  return `<div class="page-head"><h2>🧾 Ventas</h2></div>${seg('ventas',[['pedidos','Pedidos'],['cobranza','💰 Cobranza'],['productos','Mis productos']],s)}${s==='pedidos'?vPedidos():s==='cobranza'?vCobranza():vProductos()}`;
+  return `<div class="page-head"><h2>🧾 Ventas</h2></div>${seg('ventas',[['pedidos','Pedidos'],['lab','🧪 Laboratorio'],['cobranza','💰 Cobranza'],['productos','Productos']],s)}${s==='pedidos'?vPedidos():s==='lab'?vOrdenesLab():s==='cobranza'?vCobranza():vProductos()}`;
 };
 function vPedidos(){
   const P=DB.Pedidos;
@@ -986,13 +1275,13 @@ function pedidoCard(p){
   const vivo=p.estado!=='Cancelado';
   return `<div class="item"><div class="item-top"><div><b data-act="verCliente" data-id="${p.clienteId}" style="cursor:pointer">${esc(cliLabel(p.clienteId))}</b><div class="muted sm">${items||'Sin productos'}</div></div><div class="amt">${money(p.total)}</div></div>
   <div class="fechas"><span>🧾 Pedido <b>${fmtDate(p.fecha)}</b></span>${p.fechaEntrega?`<span>🚚 Entrega <b>${fmtDate(p.fechaEntrega)}</b></span>`:''}${p.pagado&&p.fechaPago?`<span>💵 Pago <b>${fmtDate(p.fechaPago)}</b></span>`:''}</div>
-  <div class="badges">${badgeEstado(p.estado)}${vivo?(p.pagado?`<span class="badge ok">💵 Cobrado${p.metodoPago?' · '+esc(p.metodoPago):''}</span>`:'<span class="badge warn">⏳ Por cobrar</span>'):''}${esFiado(p)?'<span class="badge gold">🤝 Fiado</span>':''}${(v=>v?`<span class="badge ${v.c}">${v.ic} ${v.txt}</span>`:'')(venceInfo(p))}${porCobrar(p)&&num(p.abonado)>0?`<span class="badge info">Abonó ${money(p.abonado)} · debe ${money(saldo(p))}</span>`:''}${porCobrar(p)?(d=>d.n>1?`<span class="badge bad" data-act="verCuenta" data-id="${p.clienteId}" style="cursor:pointer">💰 Deuda total ${money(d.total)} (${d.n} pedidos)</span>`:'')(deudaPac(p.clienteId)):''}${nAplazos(p)?`<span class="badge">📅 Aplazado ${nAplazos(p)} ${pl(nAplazos(p),'vez','veces')}</span>`:''}</div>
+  <div class="badges">${badgeEstado(p.estado)}${vivo?(p.pagado?`<span class="badge ok">💵 Cobrado${p.metodoPago?' · '+esc(p.metodoPago):''}</span>`:'<span class="badge warn">⏳ Por cobrar</span>'):''}${esFiado(p)?'<span class="badge gold">🤝 Fiado</span>':''}${(v=>v?`<span class="badge ${v.c}">${v.ic} ${v.txt}</span>`:'')(venceInfo(p))}${porCobrar(p)&&num(p.abonado)>0?`<span class="badge info">Abonó ${money(p.abonado)} · debe ${money(saldo(p))}</span>`:''}${porCobrar(p)?(d=>d.n>1?`<span class="badge bad" data-act="verCuenta" data-id="${p.clienteId}" style="cursor:pointer">💰 Deuda total ${money(d.total)} (${d.n} pedidos)</span>`:'')(deudaPac(p.clienteId)):''}${nAplazos(p)?`<span class="badge">📅 Aplazado ${nAplazos(p)} ${pl(nAplazos(p),'vez','veces')}</span>`:''}${badgeLab(p)}</div>
   ${zonaTxt(p)||envioCosto(p)?`<div class="muted sm" style="display:flex;gap:10px;flex-wrap:wrap">${zonaTxt(p)?`<span>${p.zonaTipo==='Recojo'?'🏠':'📍'} ${esc(zonaTxt(p))}</span>`:''}${envioCosto(p)?`<span>🚚 Delivery y embalaje: <b>${money(envioCosto(p))}</b></span>`:''}${p.cobroEnvio?`<span>(cobrado ${money(p.cobroEnvio)})</span>`:''}${envioCosto(p)?compBadge('Pedidos',p.id,'Comprobante','⚠️ Sin comprobante de envío'):''}</div>`:''}
   ${p.direccionEntrega?`<div class="muted sm ellipsis">🏷️ ${esc(p.direccionEntrega)}</div>`:''}
   <div class="actions">
-    ${p.estado==='Pendiente'?`<button type="button" class="btn sm ok" data-act="pedEntregado" data-id="${p.id}">✓ Entregar</button>`:''}
+    ${p.estado==='Pendiente'?`${labEst(p)===''?`<button type="button" class="btn sm wa" data-act="labEnviar" data-id="${p.id}">🧪 Al laboratorio</button>`:labEst(p)==='Enviado'?`<button type="button" class="btn sm ghost" data-act="labListo" data-id="${p.id}">✅ Lab listo</button>`:''}<button type="button" class="btn sm ok" data-act="pedEntregado" data-id="${p.id}">✓ Entregar</button>`:''}
     ${vivo&&!p.pagado?`<button type="button" class="btn sm gold" data-act="pedCobrado" data-id="${p.id}">💵 Pagó</button><button type="button" class="btn sm ghost" data-act="recordarPago" data-id="${p.id}">🔔 Recordar</button><button type="button" class="btn sm ghost" data-act="aplazarPago" data-id="${p.id}">📅 Aplazar</button>`:''}
-    <button type="button" class="btn sm wa" data-act="waPedido" data-id="${p.id}">WhatsApp${tieneComp('Pedidos',p.id)?' + 🧾':''}</button>
+    <button type="button" class="btn sm wa" data-act="waPedido" data-id="${p.id}">WhatsApp${fotosPed(p.id).length?' + 📸'+fotosPed(p.id).length:''}</button>
     <button type="button" class="btn sm ghost" data-act="editPedido" data-id="${p.id}">Editar</button>
   </div></div>`;
 }
@@ -1252,18 +1541,20 @@ VIEWS.clientes=()=>{
   return `<div class="page-head"><h2>👥 Pacientes</h2></div>
   ${tip(`Tus pacientes son <b>números del 1 al ${max}</b>, igual que en tu cuaderno. Marca el recuadro ✅ cuando ese número ya esté <b>registrado</b>. Toca un número para ver sus compras.`)}
   <div class="kpis" style="margin-bottom:12px">${kpi('✅','Registrados',`<span id="nRegKpi">${nReg()}</span> de ${max}`,'','ok')}${kpi('🛒','Han comprado',compr,'pacientes con pedidos','warn')}</div>
-  <div class="toolbar"><input class="search" type="search" inputmode="numeric" placeholder="🔍 Buscar N° de paciente…" data-search="cli" value="${esc(route.q.cli)}"></div>
-  ${chips('cFil',[['todos','Todos'],['reg','✅ Registrados'],['libres','⬜ Sin registrar'],['deben','💰 Deben'],['top','⭐ Los que más compran']],route.cFil)}
+  <div class="toolbar"><input class="search" type="search" inputmode="numeric" placeholder="🔍 Buscar N° de paciente…" data-search="cli" value="${esc(route.q.cli)}"><button type="button" class="btn" data-act="newMsg">💬 Mensaje</button></div>
+  ${chips('cFil',[['todos','Todos'],['reg','✅ Registrados'],['libres','⬜ Sin registrar'],['deben','💰 Deben'],['msgs','💬 Con mensajes'],['top','⭐ Los que más compran']],route.cFil)}
   <div id="list">${LISTS.cli()}</div>`;
 };
 LISTS.cli=()=>{
   const max=maxCli(), st=statsClientes(), q=route.q.cli.replace(/\D/g,''), f=route.cFil;
   const deu={};DB.Pedidos.forEach(p=>{const s0=saldo(p);if(s0>0)deu[p.clienteId]=(deu[p.clienteId]||0)+s0});
-  let L=[];for(let n=1;n<=max;n++) L.push({n,reg:isReg(n),s:st[cliId(n)]||{n:0,total:0},debe:deu[cliId(n)]||0});
+  const nm={},um={};DB.Mensajes.forEach(m=>{nm[m.clienteId]=(nm[m.clienteId]||0)+1;const k=m.fecha+(m.hora||'');if(!um[m.clienteId]||k>um[m.clienteId])um[m.clienteId]=k});
+  let L=[];for(let n=1;n<=max;n++) L.push({n,reg:isReg(n),s:st[cliId(n)]||{n:0,total:0},debe:deu[cliId(n)]||0,nm:nm[cliId(n)]||0,um:um[cliId(n)]||''});
   if(q) L=L.filter(c=>String(c.n).startsWith(q));
   if(f==='reg') L=L.filter(c=>c.reg);
   if(f==='libres') L=L.filter(c=>!c.reg);
   if(f==='deben') L=L.filter(c=>c.debe>0).sort((a,b)=>b.debe-a.debe);
+  if(f==='msgs') L=L.filter(c=>c.nm>0).sort((a,b)=>(b.um||'').localeCompare(a.um||''));
   if(f==='top') L=L.filter(c=>c.s.n>0).sort((a,b)=>b.s.total-a.s.total||b.s.n-a.s.n);
   if(!L.length) return empty('🔍','No hay números con ese filtro',f==='top'?'Cuando anotes pedidos, aquí verás quién compra más.':'Prueba con otro número o filtro.');
   return `<div class="cgrid">${L.map(cliTile).join('')}</div>
@@ -1273,7 +1564,7 @@ function cliTile(c){
   return `<div class="ctile ${c.reg?'on':''}">
     <button type="button" class="cnum" data-act="verCliente" data-id="${cliId(c.n)}" aria-label="Ver paciente ${c.n}"><b>${c.n}</b><small>${c.reg?'Registrado':'Sin registrar'}</small></button>
     <label class="cbox" title="Registrado"><input type="checkbox" data-reg="${c.n}" ${c.reg?'checked':''} aria-label="Paciente ${c.n} registrado"><span></span></label>
-    ${c.s.n?`<span class="cbuy">🛒 ${c.s.n}</span>`:''}${c.debe?`<span class="cdebt">💰 ${moneyShort(c.debe)}</span>`:''}
+    ${c.s.n?`<span class="cbuy">🛒 ${c.s.n}</span>`:''}${c.debe?`<span class="cdebt">💰 ${moneyShort(c.debe)}</span>`:''}${c.nm?`<span class="cmsg">💬${c.nm}</span>`:''}
   </div>`;
 }
 
@@ -1537,10 +1828,10 @@ function formPedido(p={},preCli){
         <small class="muted" style="display:block;margin:-6px 0 10px">Lo que <b>tú pagas por este pedido</b>: delivery/courier, embalaje (cajas, burbupack) y flete a provincia.</small>
         <label class="check" style="margin-bottom:10px"><input type="checkbox" name="pacPaga" ${(p.id?(num(p.cobroEnvio)>0&&Math.abs(num(p.cobroEnvio)-envioCosto(p))<0.01):true)?'checked':''}><span>🧾 El paciente paga el delivery<br><small class="muted" style="font-weight:600">Se le cobra lo mismo que cuesta (delivery + embalaje + flete)</small></span></label>
         ${field(`Delivery que se le cobra al paciente (${cfg.moneda})`,inp('cobroEnvio',p.cobroEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00 si es gratis"'),'Se suma al total del pedido. Desmarca la casilla si cobras otro monto o es gratis.')}
-        ${adjuntosBox('Pedidos',p.id,'Comprobante del envío (delivery / agencia)')}
       </div>
       ${field('Referencia de entrega (opcional)',inp('direccionEntrega',p.direccionEntrega,'placeholder="Ej: agencia Shalom, mercado, puesto 12…"'))}
     </div>
+    ${fotosPedidoBox(p.id)}
     <div class="calc" id="pCalc"></div>
     <div class="subcard"><b>📅 Entrega y pago</b>
       <div class="row2">${field('Entrega',sel('estado',[['Pendiente','🕒 Por entregar'],['Entregado','✅ Entregado'],['Cancelado','❌ Cancelado']],p.estado||'Pendiente'))}<label class="field" id="feWrap"><span>Fecha de entrega</span>${inp('fechaEntrega',p.fechaEntrega||'','type="date"')}</label></div>
@@ -1565,12 +1856,13 @@ function formPedido(p={},preCli){
      if(ent&&p.estado!=='Entregado') H.push(hEv(pag?'entrega':'fiado',{a:fe}));
      if(d.estado==='Cancelado'&&p.estado!=='Cancelado') H.push(hEv('cancelado'));
      if(pag&&!p.pagado) H.push(hEv('pago',{a:fp,m:d.metodoPago||''}));
+     {const nf=((SH&&SH.adj)||[]).map(a=>etqTxt(a.etq||'otra'));if(nf.length)H.push(hEv('fotos',{m:`${nf.length} ${pl(nf.length,'foto','fotos')}: ${[...new Set(nf)].join(', ')}`}));}
      if(!pag&&fc&&fc!==(p.fechaCompromiso||'')) H.push(p.fechaCompromiso?hEv('aplazo',{de:p.fechaCompromiso,a:fc}):hEv('compromiso',{a:fc}));
      saveRow('Pedidos',{id:rid,fecha:d.fecha,clienteId:cid,items:its,subtotal:sub,total:+(sub+cobro).toFixed(2),abonado:pag?+(sub+cobro).toFixed(2):Math.min(num(p.abonado),+(sub+cobro).toFixed(2)),estado:d.estado,pagado:pag,metodoPago:d.metodoPago,fechaEntrega:fe,fechaCompromiso:fc,fechaPago:fp,historial:H,
        zonaTipo:d.zonaTipo,zona,costoEnvio:recojo?0:num(d.costoEnvio),costoEmbalaje:recojo?0:num(d.costoEmbalaje),costoFlete:recojo?0:num(d.costoFlete),cobroEnvio:cobro,direccionEntrega:d.direccionEntrega,nota:d.nota});
      if(zona) setZonaCliente(cn,d.zonaTipo,zona);
-     if(!recojo) encolarAdj({tipo:'Envío',refTipo:'Pedidos',refId:rid,fecha:d.fecha,monto:+(num(d.costoEnvio)+num(d.costoEmbalaje)+num(d.costoFlete)).toFixed(2),proveedor:d.direccionEntrega||'',nota:'',referencia:refText('Pedidos',rid)});
-     toast(p.id?'Pedido actualizado ✅':'Pedido anotado 🧾');render()},
+     encolarAdj({tipo:'Envío',refTipo:'Pedidos',refId:rid,fecha:d.fecha,monto:+(num(d.costoEnvio)+num(d.costoEmbalaje)+num(d.costoFlete)).toFixed(2),proveedor:d.direccionEntrega||'',nota:'',referencia:refText('Pedidos',rid)});
+     render(); if(!p.id&&d.estado==='Pendiente'){formOrdenLab([rid],{nuevo:1});return} toast(p.id?'Pedido actualizado ✅':'Pedido anotado 🧾')},
    onDelete:p.id?()=>confirmDel('Pedidos',p.id,'este pedido'):null});
 }
 function formGasto(g={}){
@@ -1601,6 +1893,8 @@ function verCliente(id){
     ${favId?`<div class="tip"><span>❤️</span><p>Su favorito: <b>${esc(prodName(byId('Productos',favId)))}</b> (${fmtNum(fav[favId],0)} ${esc(uLbl(favId,fav[favId]))})</p></div>`:''}
     ${deuda?`<button type="button" class="btn block gold" data-act="verCuenta" data-id="${id}">💰 Ver su cuenta: debe ${money(deuda)}</button>`:''}
     <button type="button" class="btn block" data-act="newPedido" data-cli="${id}">🧾 Nuevo pedido para el N° ${n}</button>
+    ${(M=>`<div class="subcard"><b>💬 Mensajes del paciente (${M.length})</b>${M.length?chatHtml(M.slice(-3)):'<p class="muted sm" style="margin:6px 0">Aún no hay mensajes guardados. Copia sus mensajes de WhatsApp y pégalos aquí.</p>'}
+      <div class="btn-row"><button type="button" class="btn sm" data-act="newMsg" data-cli="${id}">+ Anotar mensaje</button>${M.length?`<button type="button" class="btn sm ghost" data-act="verMsgs" data-id="${id}">Ver todos</button>`:''}<button type="button" class="btn sm ghost" data-act="importChat" data-cli="${id}">📥 Importar chat</button></div></div>`)(msgsDe(id))}
     <h4 style="margin:6px 0 8px;font-weight:900">Historial de pedidos</h4>
     ${ps.length?`<div class="list" style="grid-template-columns:1fr">${ps.map(pedidoCard).join('')}</div>`:'<p class="muted">Todavía no tiene pedidos.</p>'}`,
   {noSubmit:true});
@@ -1666,6 +1960,7 @@ function formAjustes(){
     <div class="calc" style="margin-top:0">${estado}</div>
     ${esApp()?'<div class="calc">📲 Estás usando la <b>app instalada</b>.</div>':`<button type="button" class="btn gold block" data-act="install">📲 Instalar en este celular</button>`}
     <div class="row2">${field('Nombre del negocio',inp('negocio',cfg.negocio))}${field('Moneda',inp('moneda',cfg.moneda,'placeholder="S/"'))}</div>
+    ${labsEditor()}
     ${field('Cantidad de números de pacientes',inp('maxClientes',maxCli(),'type="number" min="10" max="2000" step="1" inputmode="numeric"'),'Por defecto del 1 al 100. Súbelo cuando tu cuaderno tenga más.')}
     <div class="btn-row"><button type="button" class="btn sm ghost" data-act="syncNow">🔄 Actualizar datos</button><button type="button" class="btn sm ghost" data-act="backup">⬇️ Descargar copia</button></div>
     <p class="muted sm" style="text-align:center;margin:4px 0 0">Versión ${APP_VERSION}</p>
@@ -1675,8 +1970,8 @@ function formAjustes(){
     <div class="btn-row"><button type="button" class="btn sm ghost" data-act="testConn">🧪 Probar conexión</button><button type="button" class="btn sm ghost" data-act="uploadAll">⬆️ Subir datos del celular</button></div>
     <div class="btn-row"><button type="button" class="btn sm ghost" data-act="restore">♻️ Restaurar copia</button><button type="button" class="btn sm ghost" data-act="demo">🧪 Datos de ejemplo</button></div>
     <button type="button" class="btn sm danger block" data-act="wipe">🗑️ Borrar datos de este celular</button>`:''}`,
-  {submitText:'Guardar',onSubmit:d=>{
-    cfg=Object.assign(cfg,{negocio:d.negocio||'El Látigo',moneda:d.moneda||'S/',maxClientes:Math.max(10,Math.min(2000,Math.round(num(d.maxClientes))||100))});store(CFG_KEY,{negocio:cfg.negocio,moneda:cfg.moneda,maxClientes:cfg.maxClientes});
+  {submitText:'Guardar',onSubmit:(d,f)=>{
+    cfg=Object.assign(cfg,{negocio:d.negocio||'El Látigo',moneda:d.moneda||'S/',maxClientes:Math.max(10,Math.min(2000,Math.round(num(d.maxClientes))||100)),labs:leerLabs(f)});guardarCfg();
     toast('Ajustes guardados ✅');render()}});
 }
 function ayuda(){
@@ -1685,7 +1980,7 @@ function ayuda(){
     <h4>🔁 El ciclo del negocio</h4>
     <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y sube tu stock.</li><li><b>Vendes en un pedido</b> 🧾 → baja el stock.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
     <h4>📖 Palabras clave</h4>
-    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Laboratorista:</b> se le paga cada quincena. Registra el pago en Producción → 🧪 Laborat.; se reparte entre lo producido en esa quincena y suma al costo por unidad.</li><li><b>Fechas y fiados:</b> cada pedido guarda su fecha de pedido, de entrega y de pago. Al entregar puedes marcar <b>🤝 fiado</b> con la fecha en que pagará. Si promete pagar otro día usa <b>📅 Aplazar</b>, y con <b>🔔 Recordar</b> le envías por WhatsApp su pedido, entrega y monto. Todo queda en la trazabilidad del pedido. Mira <b>Ventas → 💰 Cobranza</b>.</li><li><b>Deuda acumulada:</b> si un paciente vuelve a pedir sin haber pagado, su deuda se suma. En su <b>💰 cuenta</b> ves todo lo que debe, registras pagos parciales (se aplican al pedido más antiguo), le recuerdas toda la deuda por WhatsApp y puedes ponerle un límite de fiado.</li><li><b>Delivery y embalaje:</b> son costos de cada pedido; se anotan dentro del pedido.</li><li><b>Boletas 📎:</b> en cada compra, gasto y envío puedes tomar una foto o subir un PDF del comprobante. Se convierte en un link (ImgBB) y la hoja guarda solo ese link. En Producción → 📎 Boletas ves todas y lo que falta adjuntar.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Pacientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Paciente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
+    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Laboratorista:</b> se le paga cada quincena. Registra el pago en Producción → 🧪 Laborat.; se reparte entre lo producido en esa quincena y suma al costo por unidad.</li><li><b>Fechas y fiados:</b> cada pedido guarda su fecha de pedido, de entrega y de pago. Al entregar puedes marcar <b>🤝 fiado</b> con la fecha en que pagará. Si promete pagar otro día usa <b>📅 Aplazar</b>, y con <b>🔔 Recordar</b> le envías por WhatsApp su pedido, entrega y monto. Todo queda en la trazabilidad del pedido. Mira <b>Ventas → 💰 Cobranza</b>.</li><li><b>Deuda acumulada:</b> si un paciente vuelve a pedir sin haber pagado, su deuda se suma. En su <b>💰 cuenta</b> ves todo lo que debe, registras pagos parciales (se aplican al pedido más antiguo), le recuerdas toda la deuda por WhatsApp y puedes ponerle un límite de fiado.</li><li><b>Laboratorio 🧪:</b> tú vendes y el laboratorio prepara. Al anotar un pedido, la app te ofrece enviarle por WhatsApp la orden (“Preparar 8 botellas para el Paciente N° 2”). En <b>Ventas → 🧪 Laboratorio</b> ves qué falta avisar, qué está preparando y qué ya está listo.</li><li><b>Fotos del pedido 📸:</b> en cada pedido puedes subir varias fotos (producto embalado, comprobante de delivery, de embalaje, guía de agencia). Quedan guardadas en el pedido y con <b>WhatsApp</b> se envían todas juntas al paciente.</li><li><b>Mensajes 💬:</b> en la ficha de cada paciente guardas lo que te escribe: copia el mensaje en WhatsApp y pégalo, o importa el chat completo (Exportar chat → Sin archivos). Quedan como historial con fecha y hora.</li><li><b>Delivery y embalaje:</b> son costos de cada pedido; se anotan dentro del pedido.</li><li><b>Boletas 📎:</b> en cada compra, gasto y envío puedes tomar una foto o subir un PDF del comprobante. Se convierte en un link (ImgBB) y la hoja guarda solo ese link. En Producción → 📎 Boletas ves todas y lo que falta adjuntar.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Pacientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Paciente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
     <h4>📲 Tenla como app en tu celular</h4>
     <p>Toca <b>Instalar</b> (en Inicio o en ⚙️ Ajustes) y tendrás el ícono del burro en tu pantalla de inicio. Cuando haya mejoras, se actualiza sola: <b>no hace falta volver a instalar</b>.</p>
     <h4>🟢 El punto de arriba</h4>
@@ -1702,7 +1997,8 @@ function csv(name,rows){
 const dec=n=>String(+(+n).toFixed(2)).replace('.',',');
 const CSVS={
   clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° paciente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Unidades:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
-  pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Paciente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Subtotal:dec(p.subtotal||p.total-num(p.cobroEnvio)),'Envío cobrado':dec(p.cobroEnvio),Total:dec(p.total),'Tipo destino':p.zonaTipo,Destino:p.zona,'Costo delivery':dec(p.costoEnvio),'Costo embalaje':dec(p.costoEmbalaje),'Costo flete':dec(p.costoFlete),Estado:p.estado,'Fecha entrega':p.fechaEntrega,Cobrado:p.pagado?'Sí':'No',Fiado:esFiado(p)?'Sí':'No','Fecha pago acordada':p.fechaCompromiso,Abonado:dec(cobrado(p)),Saldo:dec(saldo(p)),'Fecha de pago':p.fechaPago,'Aplazamientos':nAplazos(p),'Días hasta el pago':p.pagado&&p.fechaPago?dDiff(p.fechaPago,p.fecha):'','Forma de pago':p.metodoPago,Referencia:p.direccionEntrega,Trazabilidad:(p.historial||[]).map(h=>`${h.f}: ${(HIST[h.t]||h.t).replace(/^\S+ /,'')}${h.a?' '+h.a:''}${h.n?' ('+h.n+')':''}`).join(' | ')})),
+  mensajes:()=>[...DB.Mensajes].sort((a,b)=>(a.clienteId+a.fecha+a.hora).localeCompare(b.clienteId+b.fecha+b.hora)).map(m=>({Fecha:m.fecha,Hora:m.hora,Paciente:cliShort(m.clienteId),'Escribió':m.de==='yo'?'Yo':'Paciente',Mensaje:m.texto,Fotos:(m.fotos||[]).map(f=>f.url).join(' '),Pedido:m.pedidoId&&byId('Pedidos',m.pedidoId)?byId('Pedidos',m.pedidoId).fecha:''})),
+  pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Paciente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Subtotal:dec(p.subtotal||p.total-num(p.cobroEnvio)),'Envío cobrado':dec(p.cobroEnvio),Total:dec(p.total),'Tipo destino':p.zonaTipo,Destino:p.zona,'Costo delivery':dec(p.costoEnvio),'Costo embalaje':dec(p.costoEmbalaje),'Costo flete':dec(p.costoFlete),Estado:p.estado,'Fecha entrega':p.fechaEntrega,Cobrado:p.pagado?'Sí':'No',Fiado:esFiado(p)?'Sí':'No','Fecha pago acordada':p.fechaCompromiso,Abonado:dec(cobrado(p)),Saldo:dec(saldo(p)),'Fecha de pago':p.fechaPago,'Aplazamientos':nAplazos(p),'Días hasta el pago':p.pagado&&p.fechaPago?dDiff(p.fechaPago,p.fecha):'','Forma de pago':p.metodoPago,Referencia:p.direccionEntrega,Laboratorio:enLab(p)?(labEst(p)||'Sin avisar'):'','Enviado al lab':p.labFecha||'','Lab para':p.labPara||'',Laboratorista:p.labA||'',Trazabilidad:(p.historial||[]).map(h=>`${h.f}: ${(HIST[h.t]||h.t).replace(/^\S+ /,'')}${h.a?' '+h.a:''}${h.n?' ('+h.n+')':''}`).join(' | ')})),
   produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Tipo:(byId('Productos',l.productoId)||{}).tipo||'',Cantidad:l.botellas,Unidad:(byId('Productos',l.productoId)||{}).unidad||'','Costo insumos':dec(l.costoInsumos),Laboratorista:dec(labLote(l)),'Otros costos':dec(l.otrosCostos),'Costo total':dec(costoLote(l)),'Costo por unidad':dec(l.botellas?costoLote(l)/l.botellas:0),Nota:l.nota})),
   deudas:()=>deudores().map(d=>({'N° paciente':cliNum(d.id),'Pedidos pendientes':d.n,'Deuda total':dec(d.total),Vencido:dec(d.venc),'Debe desde':d.desde,'Próximo pago':d.prox,'Límite de fiado':limitePac(d.id)?dec(limitePac(d.id)):''})),
   comprobantes:()=>DB.Comprobantes.map(c=>({Fecha:c.fecha,Tipo:c.tipo,Monto:dec(c.monto),Emisor:c.proveedor,'Vinculado a':c.refTipo&&c.refId&&byId(c.refTipo,c.refId)?refText(c.refTipo,c.refId):c.referencia,Nota:c.nota,Link:c.url,'Link para borrar':c.deleteUrl})),
@@ -1755,8 +2051,16 @@ const ACT={
     toast('Boleta eliminada 🗑️');render()},
   verCliente:d=>verCliente(d.id),
   waPedido:d=>waPedido(d.id),
-  waShare:d=>{const f=SH&&SH.waFile,p=byId('Pedidos',d.id);if(!f||!p)return;
-    navigator.share({files:[f],text:pedidoMsg(p,{conFoto:true})}).then(()=>{closeSheet();toast('📤 Enviado ✅')}).catch(e=>{if(e&&e.name!=='AbortError')toast('No se pudo compartir: usa “Enviar solo el texto”','warn')})},
+  waShare:d=>{const p=byId('Pedidos',d.id);if(!p||!SH)return;const S=waSel(),con=S.filter(x=>x.b),sin=S.filter(x=>!x.b);
+    const base=`${cliLabel(p.clienteId).replace(/\W+/g,'-')}-${p.fecha}`;
+    const files=con.map((x,k)=>new File([x.b],`${base}-${(etqInfo(x.c.etiqueta||'delivery')||['foto'])[0]}-${k+1}.jpg`,{type:x.b.type||'image/jpeg'}));
+    const text=msgConLinks(p,con.map(x=>x.c),sin.map(x=>x.c));
+    try{navigator.clipboard&&navigator.clipboard.writeText(text).catch(()=>{})}catch(e){}
+    const data=files.length?{files,text}:{text};
+    if(files.length&&navigator.canShare&&!navigator.canShare({files})){toast('Este celular no deja enviar tantas fotos juntas: desmarca algunas','warn');return}
+    navigator.share(data).then(()=>{regWa(p.id,files.length?`con ${files.length} ${pl(files.length,'foto','fotos')}`:'solo texto');closeSheet();toast('📤 Enviado ✅ · el texto también quedó copiado por si WhatsApp no lo muestra');render()})
+      .catch(e=>{if(e&&e.name!=='AbortError')toast('No se pudo compartir: usa “Enviar solo el texto”','warn')})},
+  waTexto:d=>{const p=byId('Pedidos',d.id);if(!p)return;const S=waSel();window.open(waLink('',pedidoMsg(p,SH&&SH.waF?{links:S.map(x=>x.c)}:{})),'_blank');regWa(p.id,S.length?`texto con ${S.length} ${pl(S.length,'link','links')} de fotos`:'solo texto');closeSheet();render()},
   guardarZona:d=>{const f=$('#shForm'),z=f.elements.zona.value.trim();setZonaCliente(+d.n,f.elements.zonaTipo.value,z);toast(z?`📍 N° ${d.n}: ${z}`:'Destino borrado');render()},
   usarUltEnvio:()=>{const f=$('#shForm'),u=ultimoEnvio(f.elements.zonaTipo.value,f.elements.zona.value);if(!u)return;f.elements.costoEnvio.value=u.costoEnvio||'';f.elements.costoEmbalaje.value=u.costoEmbalaje||'';f.elements.costoFlete.value=u.costoFlete||'';f.dataset.autoEnv=1;SH.onInput(null,f)},
   pedEntregado:d=>formEntrega(byId('Pedidos',d.id)),
@@ -1775,6 +2079,19 @@ const ACT={
     deudaPac(cid).L.forEach(p=>saveRow('Pedidos',Object.assign({},p,{historial:[...(p.historial||[]),hEv('recordatorio',{n:'Resumen de toda su deuda'})]})));closeSheet();toast('🔔 Recordatorio registrado');render()},
   guardarLimite:d=>{const v=num($('#shForm').elements.limite.value),old=byId('Clientes',d.id)||{},n=cliNum(d.id);
     saveRow('Clientes',Object.assign({nota:'',registrado:false,zonaTipo:'',zona:''},old,{id:d.id,numero:n,limite:v,creado:old.creado||today()}));toast(v?`⛔ Límite de fiado: ${money(v)}`:'Sin límite de fiado');verCuenta(d.id)},
+  newMsg:d=>formMensaje({},{cli:d.cli||'',verDespues:!!d.cli}),
+  editMsg:d=>formMensaje(byId('Mensajes',d.id)),
+  verMsgs:d=>verMensajes(d.id),
+  importChat:d=>formImportarChat({cid:d.cli||''}),
+  pegadoAImport:()=>{const f=$('#shForm'),t=f.elements.texto.value,c=f.elements.clienteId.value;formImportarChat({texto:t,cid:c})},
+  pegarMsg:async()=>{try{const t=await navigator.clipboard.readText();const ta=$('#shForm [name=texto]');if(ta&&t){ta.value=(ta.value?ta.value+'\n':'')+t;SH.onInput({target:ta},$('#shForm'))}else if(!t)toast('No hay nada copiado','warn')}catch(e){toast('Mantén presionado el recuadro y elige “Pegar”','warn')}},
+  labEnviar:d=>formOrdenLab([d.id]),
+  labTodos:()=>formOrdenLab(DB.Pedidos.filter(p=>enLab(p)&&!labEst(p)).sort((a,b)=>(a.fecha+a.id).localeCompare(b.fecha+b.id)).map(p=>p.id)),
+  labListo:d=>ordenLabLista(d.id),
+  labConfig:()=>formLabConfig(),
+  addLabRow:()=>{const b=$('#labRows');if(!b)return;b.insertAdjacentHTML('beforeend',labRow());$('#labRows .labrow:last-child [name=labNom]').focus()},
+  delLabRow:(d,el)=>{const r=el&&el.closest('.labrow');if(r)r.remove();if(!$('#labRows .labrow'))$('#labRows').insertAdjacentHTML('beforeend',labRow())},
+  goLab:()=>{route.tab='ventas';route.sub.ventas='lab';closeSheet();render();window.scrollTo(0,0)},
   goCobranza:()=>{route.tab='ventas';route.sub.ventas='cobranza';closeSheet();render();window.scrollTo(0,0)},
   pedCobrado:d=>formCobrado(byId('Pedidos',d.id)),
   addPed:()=>{$('#lines').insertAdjacentHTML('beforeend',pedLine());SH.onInput(null,$('#shForm'))},
@@ -1819,9 +2136,14 @@ document.addEventListener('input',e=>{
   route.q[k]=e.target.value; const L=$('#list'); if(L) L.innerHTML=LISTS[k]();
 });
 document.addEventListener('change',async e=>{
+  if(e.target.matches&&e.target.matches('input[data-chat]')){
+    const fl=e.target.files[0]; e.target.value=''; if(!fl||!SH) return;
+    if(/\.zip$/i.test(fl.name)){toast('Ese chat trae fotos (.zip). Expórtalo otra vez eligiendo “Sin archivos”.','warn');return}
+    const t=await fl.text(), ta=$('#shForm [name=chat]'); if(ta){ta.value=t;SH.onInput&&SH.onInput(null,$('#shForm'))} return;
+  }
   if(e.target.matches&&e.target.matches('input[data-adj]')){
-    const files=[...e.target.files]; e.target.value=''; if(!files.length||!SH) return;
-    for(const fl of files){try{SH.adj.push(await prepararArchivo(fl))}catch(err){toast(err.message,'bad')}}
+    const files=[...e.target.files], etq=e.target.dataset.etq||''; e.target.value=''; if(!files.length||!SH) return;
+    for(const fl of files){try{const a=await prepararArchivo(fl);if(etq)a.etq=etq;SH.adj.push(a)}catch(err){toast(err.message,'bad')}}
     renderAdjNuevos(); return;
   }
   const n=e.target.dataset&&+e.target.dataset.reg; if(!n) return;
@@ -1895,6 +2217,9 @@ function demoData(){
   {const fx=[...d.Pedidos].filter(p=>p.estado==='Entregado').slice(-6);
    if(fx[0]){const p=fx[0];p.pagado=false;p.metodoPago='';p.fechaPago='';p.fechaCompromiso=addD(T,-4);p.historial=[hEv('pedido',{f:p.fecha}),hEv('fiado',{f:p.fechaEntrega,a:p.fechaEntrega}),hEv('compromiso',{f:p.fechaEntrega,a:addD(T,-10)}),hEv('recordatorio',{f:addD(T,-9)}),hEv('aplazo',{f:addD(T,-9),de:addD(T,-10),a:addD(T,-4),n:'Cobra su quincena'})]}
    if(fx[1]){const p=fx[1];p.pagado=false;p.metodoPago='';p.fechaPago='';p.fechaCompromiso=addD(T,2);p.historial=[hEv('pedido',{f:p.fecha}),hEv('fiado',{f:p.fechaEntrega,a:p.fechaEntrega}),hEv('compromiso',{f:p.fechaEntrega,a:addD(T,2)})]}}
+  d.Pedidos.filter(p=>p.estado==='Pendiente').forEach((p,i)=>{if(i%3===0)return;p.labEstado=i%3===1?'Enviado':'Listo';p.labFecha=p.fecha;p.labPara=addD(p.fecha,2);(p.historial=p.historial||[]).push(hEv('lab',{f:p.fecha,a:p.labPara}));if(p.labEstado==='Listo')p.historial.push(hEv('labListo',{f:addD(p.fecha,1)}))});
+  d.Mensajes=[['n12',-6,'09:14','paciente','Hola, ¿me puedes mandar 2 más? El viernes te pago todo 🙏'],['n12',-6,'09:20','yo','Claro, te lo mando mañana. Recuerda que vas S/ 150 😉'],['n12',-5,'18:02','paciente','Ya me llegó, gracias. Muy bueno el sólido 👌'],['n3',-2,'11:40','paciente','¿Tienes el de 750 ml? Para el sábado'],['n3',-2,'11:45','yo','Sí, te lo preparo y te aviso'],['n7',-1,'20:15','paciente','Me encantó, mi papá dice que le ayudó mucho con las rodillas']]
+    .map(([c,dd,h,de,t],i)=>({id:'md'+i,fecha:addD(T,dd),hora:h,clienteId:c,de,texto:t,fotos:[],pedidoId:'',origen:'manual',creado:addD(T,dd)}));
   {const acc=[...d.Pedidos].filter(p=>p.clienteId==='n12'&&p.estado==='Entregado').slice(-3);
    acc.forEach((p,i)=>{p.pagado=false;p.metodoPago='';p.fechaPago='';p.abonado=i===0?20:0;p.fechaCompromiso=i===0?addD(T,-6):addD(T,3);
      p.historial=[hEv('pedido',{f:p.fecha}),hEv('fiado',{f:p.fechaEntrega,a:p.fechaEntrega}),hEv('compromiso',{f:p.fechaEntrega,a:p.fechaCompromiso})].concat(i===0?[hEv('abono',{f:addD(T,-8),a:addD(T,-8),m:'Yape',v:20})]:[])});
@@ -1908,6 +2233,7 @@ render();
 setTimeout(()=>$('#splash').classList.add('out'),900);
 setSync(cfg.apiUrl?'busy':'local');
 if(cfg.apiUrl) syncAll(false);
+leerCompartido();
 window.addEventListener('online',()=>{if(cfg.apiUrl){syncAll(false);processUploads()}});
 
 /* ===================== INSTALAR EN EL CELULAR =====================

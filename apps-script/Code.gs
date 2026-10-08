@@ -41,7 +41,8 @@ const HOJAS = {
   Clientes:   ['id','numero','registrado','nota','creado'],   // clientes = números 1..100
   Pedidos:    ['id','fecha','clienteId','items','total','estado','pagado','metodoPago','direccionEntrega','nota'],
   Gastos:     ['id','fecha','categoria','descripcion','monto'],
-  Comprobantes: ['id','fecha','tipo','monto','proveedor','nota','refTipo','refId','referencia','url','thumbUrl','deleteUrl','creado'],   // url = link de la imagen (ImgBB)
+  Comprobantes: ['id','fecha','tipo','monto','proveedor','nota','refTipo','refId','referencia','url','thumbUrl','deleteUrl','creado','etiqueta'],   // url = link de la imagen (ImgBB)
+  Mensajes:   ['id','fecha','hora','clienteId','de','texto','fotos','pedidoId','origen','creado'],   // mensajes de los pacientes (solo texto + links)
 };
 
 // API key gratuita de ImgBB (https://api.imgbb.com/ → Get API key). Se queda aquí, oculta: la web no la ve.
@@ -110,6 +111,7 @@ function manejar(p) {
     lock.waitLock(20000);
     try {
       if (accion === 'save')       return salida({ ok: true, row: guardar(p.sheet, p.row) });
+      if (accion === 'saveMany')   return salida({ ok: true, n: guardarVarios(p.sheet, p.rows) });
       if (accion === 'delete')     return salida({ ok: true, deleted: eliminar(p.sheet, p.id) });
       if (accion === 'replaceAll') { reemplazarTodo(p.data); return salida({ ok: true }); }
     } finally { lock.releaseLock(); }
@@ -186,6 +188,27 @@ function guardar(nombre, row) {
   const destino = r > 0 ? r : sh.getLastRow() + 1;
   sh.getRange(destino, 1, 1, h.length).setNumberFormat('@').setValues([fila(h, row)]);
   return row;
+}
+
+/** Guarda muchas filas de una vez (ej. un chat importado). */
+function guardarVarios(nombre, rows) {
+  rows = (rows || []).filter(function (r) { return r && r.id; });
+  if (!rows.length) return 0;
+  const sh = hoja(nombre);
+  let claves = HOJAS[nombre].slice();
+  rows.forEach(function (r) { claves = claves.concat(Object.keys(r)); });
+  const antes = encabezados(sh, []), h = encabezados(sh, claves);
+  if (h.length !== antes.length) asegurarEncabezados(sh, h);
+  const last = sh.getLastRow(), idx = {};
+  if (last > 1) sh.getRange(2, 1, last - 1, 1).getValues().forEach(function (v, i) { idx[String(v[0])] = i + 2; });
+  const nuevos = [];
+  rows.forEach(function (row) {
+    const r = idx[String(row.id)];
+    if (r > 0) sh.getRange(r, 1, 1, h.length).setNumberFormat('@').setValues([fila(h, row)]);
+    else if (r !== -1) { nuevos.push(fila(h, row)); idx[String(row.id)] = -1; }
+  });
+  if (nuevos.length) sh.getRange(sh.getLastRow() + 1, 1, nuevos.length, h.length).setNumberFormat('@').setValues(nuevos);
+  return rows.length;
 }
 
 function eliminar(nombre, id) {
