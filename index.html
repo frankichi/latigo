@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>El Látigo · Control de producción</title>
-<meta name="description" content="Control de producción, insumos, costos, clientes y ventas de El Látigo.">
+<meta name="description" content="Control de producción, insumos, costos, pacientes y ventas de El Látigo.">
 <meta name="theme-color" content="#0b0f12">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -302,6 +302,9 @@ code{background:#f1e7da;border-radius:6px;padding:1px 6px;font-size:.85em;word-b
 .bol .adj-it{width:72px;height:72px}
 .bol>div:last-child{flex:1;min-width:0}
 a.badge{text-decoration:none}
+.wa-prev{white-space:pre-wrap;background:#e7f7dc;border-radius:12px 12px 12px 2px;padding:10px 12px;font-size:.88rem;line-height:1.4;box-shadow:0 1px 2px rgba(0,0,0,.08);margin:0 0 12px}
+.wa-img{display:block;width:120px;height:120px;object-fit:cover;object-position:top;border-radius:12px;margin:0 0 8px;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.btn.block.wa{width:100%;margin-bottom:10px}
 .install{display:flex;align-items:center;gap:12px;background:var(--card);border:2px solid var(--gold);border-radius:var(--r);padding:12px;margin-bottom:14px;box-shadow:var(--shadow)}
 .install img{width:52px;height:52px;border-radius:12px;flex:none}
 .install>div{flex:1;min-width:0}
@@ -340,7 +343,7 @@ a.badge{text-decoration:none}
   <button data-act="nav" data-tab="inicio"><span class="e">🏠</span>Inicio</button>
   <button data-act="nav" data-tab="ventas"><span class="e">🧾</span>Ventas</button>
   <button data-act="nav" data-tab="produccion"><span class="e">🏭</span>Producción</button>
-  <button data-act="nav" data-tab="clientes"><span class="e">👥</span>Clientes</button>
+  <button data-act="nav" data-tab="clientes"><span class="e">👥</span>Pacientes</button>
   <button data-act="nav" data-tab="reportes"><span class="e">📊</span>Reportes</button>
 </div></nav>
 
@@ -379,7 +382,7 @@ a.badge{text-decoration:none}
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzeEaoIGXxMvOWNnxM1lgtrcDaUGec--uw5fDpgFY2fiTMhXIbTl7PMm4WyzxInUL-6/exec';
 const DEFAULT_TOKEN   = 'latigo-tah0or7h4j1nyt';
 const ADMIN = /[?&#]admin\b/.test(location.search+location.hash);
-const APP_VERSION = '1.9.2';
+const APP_VERSION = '2.0.0';
 let installEvt=null;
 const IS_IOS=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 const esApp=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
@@ -429,10 +432,10 @@ const fmtDate=f=>{f=String(f||'').slice(0,10);if(!f)return '';const [y,m,d]=f.sp
 const mk=f=>String(f||'').slice(0,7);
 const mlabel=k=>MESES[+k.slice(5)-1]+' '+k.slice(2,4);
 const byId=(sheet,id)=>DB[sheet].find(x=>x.id===id);
-/* Clientes = números del 1 al 100 (el nombre lo lleva el dueño en su cuaderno) */
+/* Pacientes = números del 1 al 100 (el nombre lo lleva el dueño en su cuaderno) */
 const cliNum=id=>{const m=/^n(\d+)$/.exec(String(id||''));return m?+m[1]:0};
 const cliId=n=>'n'+n;
-const cliLabel=id=>{const n=cliNum(id);return n?`Cliente N° ${n}`:'Cliente sin número'};
+const cliLabel=id=>{const n=cliNum(id);return n?`Paciente N° ${n}`:'Paciente sin número'};
 const cliShort=id=>{const n=cliNum(id);return n?`N° ${n}`:'—'};
 const isReg=n=>{const r=byId('Clientes',cliId(n));return !!(r&&r.registrado)};
 const nReg=()=>DB.Clientes.filter(c=>c.registrado&&c.numero>0).length;
@@ -442,7 +445,7 @@ function setZonaCliente(n,zt,z){const old=byId('Clientes',cliId(n))||{};if(old.z
 /* ---- Envíos por pedido ---- */
 const LIMA_DISTRITOS=['Ancón','Ate','Barranco','Breña','Carabayllo','Chaclacayo','Chorrillos','Cieneguilla','Comas','El Agustino','Independencia','Jesús María','La Molina','La Victoria','Lima Cercado','Lince','Los Olivos','Lurigancho-Chosica','Lurín','Magdalena del Mar','Miraflores','Pachacámac','Pucusana','Pueblo Libre','Puente Piedra','Punta Hermosa','Punta Negra','Rímac','San Bartolo','San Borja','San Isidro','San Juan de Lurigancho','San Juan de Miraflores','San Luis','San Martín de Porres','San Miguel','Santa Anita','Santa María del Mar','Santa Rosa','Santiago de Surco','Surquillo','Villa El Salvador','Villa María del Triunfo','Callao','Bellavista','Carmen de la Legua','La Perla','La Punta','Ventanilla','Mi Perú'];
 const PROVINCIAS=['Abancay','Arequipa','Ayacucho','Barranca','Cajamarca','Cañete','Cerro de Pasco','Chachapoyas','Chiclayo','Chimbote','Chincha','Cusco','Huacho','Huancavelica','Huancayo','Huánuco','Huaral','Huaraz','Ica','Iquitos','Juliaca','Moquegua','Piura','Pisco','Pucallpa','Puerto Maldonado','Puno','Tacna','Tarapoto','Trujillo','Tumbes'];
-const ZONA_TIPOS=[['Lima','🏙️ Lima (distrito)'],['Provincia','🛣️ Provincia'],['Recojo','🏠 Recoge el cliente']];
+const ZONA_TIPOS=[['Lima','🏙️ Lima (distrito)'],['Provincia','🛣️ Provincia'],['Recojo','🏠 Recoge el paciente']];
 /* ---- Laboratorista: se le paga POR QUINCENA (1–15 y 16–fin de mes).
    Cada pago se reparte entre lo producido en esa quincena para que entre en el costo por unidad. ---- */
 const LAB='Laboratorista';
@@ -566,7 +569,7 @@ async function processUploads(){
   try{
     while(UPQ.length){
       const it=UPQ[0];
-      const r=await subirAImgbb(it);
+      const r=await subirAImgbb(it); cacheBoleta(r.url,it.data);
       saveRow('Comprobantes',{id:it.id,fecha:it.fecha,tipo:it.tipo,monto:it.monto,proveedor:it.proveedor,nota:it.nota,refTipo:it.refTipo||'',refId:it.refId||'',referencia:it.referencia||'',url:r.url,thumbUrl:r.thumbUrl||'',deleteUrl:r.deleteUrl||'',creado:it.creado||today()});
       const campo=it.refTipo==='Pedidos'?'comprobanteEnvioUrl':(it.refTipo==='Compras'||it.refTipo==='Gastos')?'comprobanteUrl':'';
       const ref=campo&&it.refId&&byId(it.refTipo,it.refId); if(ref) saveRow(it.refTipo,Object.assign({},ref,{[campo]:r.url}));
@@ -576,8 +579,38 @@ async function processUploads(){
   }catch(e){ upErr=e.message||''; toast(!/conexi|fetch|network/i.test(upErr)?'📎 No se pudo subir la boleta: '+upErr:'📎 Sin conexión: la boleta se subirá sola cuando vuelva el internet','warn') }
   finally{ upBusy=false; render() }
 }
+/* ---- WhatsApp con el comprobante del delivery ----
+   wa.me no permite adjuntar fotos, así que se usa "Compartir" del celular (foto + texto → WhatsApp).
+   Si el equipo no puede compartir archivos, se manda el texto con el link de la foto. */
+const BOL_CACHE='latigo-boletas-v1';
+async function cacheBoleta(url,data){try{if(!url||!data||!window.caches)return;const c=await caches.open(BOL_CACHE);await c.put(url,new Response(dataUrlABlob(data),{headers:{'Content-Type':'image/jpeg'}}))}catch(e){}}
+async function blobBoleta(c){
+  if(!c) return null;
+  if(c._pend||c.data) return dataUrlABlob(c.data);
+  try{if(window.caches){const r=await (await caches.open(BOL_CACHE)).match(c.url);if(r)return await r.blob()}}catch(e){}
+  try{const r=await fetch(c.url,{mode:'cors'});if(r.ok){const b=await r.blob();if(/^image\//.test(b.type)){cacheBoletaBlob(c.url,b);return b}}}catch(e){}
+  return null;
+}
+async function cacheBoletaBlob(url,b){try{if(window.caches)await (await caches.open(BOL_CACHE)).put(url,new Response(b,{headers:{'Content-Type':b.type||'image/jpeg'}}))}catch(e){}}
+const puedeCompartirFotos=()=>{try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[new File([new Blob(['x'],{type:'image/jpeg'})],'x.jpg',{type:'image/jpeg'})]}))}catch(e){return false}};
+function waPedido(id){
+  const p=byId('Pedidos',id); if(!p) return;
+  const comp=compsDe('Pedidos',id)[0]||pendDe('Pedidos',id).map(q=>Object.assign({_pend:1},q))[0];
+  const share=!!comp&&puedeCompartirFotos();
+  openSheet('💬 Enviar por WhatsApp',`
+    ${comp?`<div class="tip"><span>🧾</span><p>Se enviará el <b>comprobante del delivery</b> para que el paciente vea lo que paga.</p></div>`:(p.cobroEnvio||envioCosto(p)?`<div class="warnbox" style="margin-bottom:12px">Este pedido aún no tiene foto del comprobante de envío. <a href="#" data-act="editPedido" data-id="${p.id}">Adjuntarla</a></div>`:'')}
+    <div id="waBox">${comp?`<img class="wa-img" src="${esc(comp._pend?comp.data:(comp.thumbUrl||comp.url))}" alt="Comprobante">`:''}<div class="wa-prev" id="waTxt">${esc(pedidoMsg(p,{conFoto:share}))}</div></div>
+    ${share?`<button type="button" class="btn block wa" data-act="waShare" data-id="${p.id}" id="waShareBtn" disabled>⏳ Preparando la foto…</button>`:''}
+    <a class="btn block ${share?'ghost':'wa'}" target="_blank" rel="noopener" href="${waLink('',pedidoMsg(p))}" id="waTxtBtn">${share?'💬 Enviar solo el texto (con link de la foto)':comp?'💬 Enviar por WhatsApp (con link de la foto)':'💬 Enviar por WhatsApp'}</a>
+    ${comp&&!comp._pend?`<a class="btn block ghost" href="${esc(comp.url)}" target="_blank" rel="noopener">🧾 Ver / guardar la foto</a>`:''}
+    <small class="muted" style="display:block;text-align:center">${share?'Al tocar el botón verde elige <b>WhatsApp</b> y luego al paciente.':'Se abrirá WhatsApp: elige al paciente y envía.'}</small>`,
+  {noSubmit:true});
+  if(share){const cur=SH;blobBoleta(comp).then(b=>{if(SH!==cur)return;const btn=$('#waShareBtn');
+    if(b){cur.waFile=new File([b],`comprobante-delivery-${cliLabel(p.clienteId).replace(/\W+/g,'-')}.jpg`,{type:b.type||'image/jpeg'});btn.disabled=false;btn.textContent='📤 Enviar por WhatsApp con la foto'}
+    else{btn.remove();$('#waTxt').textContent=pedidoMsg(p);$('#waTxtBtn').className='btn block wa';toast('No se pudo preparar la foto: se enviará el link','warn')}})}
+}
 const envioCosto=p=>num(p.costoEnvio)+num(p.costoEmbalaje)+num(p.costoFlete);
-const zonaTxt=p=>p.zonaTipo==='Recojo'?'Recoge el cliente':p.zona?`${p.zona}${p.zonaTipo==='Provincia'?' (provincia)':''}`:'';
+const zonaTxt=p=>p.zonaTipo==='Recojo'?'Recoge el paciente':p.zona?`${p.zona}${p.zonaTipo==='Provincia'?' (provincia)':''}`:'';
 function zonasUsadas(tipo){const o=new Set();DB.Pedidos.forEach(p=>{if(p.zona&&p.zonaTipo===tipo)o.add(p.zona)});DB.Clientes.forEach(c=>{if(c.zona&&c.zonaTipo===tipo)o.add(c.zona)});return [...o]}
 function ultimoEnvio(zt,z,exceptId){if(!z)return null;const k=z.trim().toLowerCase();return [...DB.Pedidos].filter(p=>p.id!==exceptId&&p.zonaTipo===zt&&String(p.zona).trim().toLowerCase()===k&&envioCosto(p)>0).sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id))[0]||null}
 const prodName=p=>p?(p.nombre+(p.presentacion?' '+p.presentacion:'')):'Producto eliminado';
@@ -749,9 +782,12 @@ function alertas(){
 /* ---------- WhatsApp / teléfono / mapa ---------- */
 function waNum(n){let d=String(n||'').replace(/\D/g,''); if(d.length===9&&d[0]==='9') d='51'+d; return d}
 const waLink=(n,msg)=>`https://wa.me/${n?waNum(n):''}${msg?'?text='+encodeURIComponent(msg):''}`;
-function pedidoMsg(p){
+function pedidoMsg(p,o={}){
   const lines=(p.items||[]).map(it=>`• ${fmtNum(it.cantidad,0)} x ${prodName(byId('Productos',it.productoId))} = ${money(it.cantidad*it.precio)}`).join('\n');
-  return `Hola 👋, te escribimos de ${cfg.negocio} 🥃\n\nPedido del ${fmtDate(p.fecha)} (${cliLabel(p.clienteId)}):\n${lines}${p.cobroEnvio?`\n🚚 Envío: ${money(p.cobroEnvio)}`:''}\n\n*Total: ${money(p.total)}*${zonaTxt(p)?`\n📍 Destino: ${zonaTxt(p)}`:''}${p.direccionEntrega?` · ${p.direccionEntrega}`:''}${p.pagado?'\n✅ Pago recibido, ¡gracias!':''}\n\n¡Saca el burro que tienes dentro! 🔥`;
+  const comp=compsDe('Pedidos',p.id)[0];
+  const del=p.cobroEnvio?`\n🚚 Delivery: ${money(p.cobroEnvio)}`:'';
+  const comprob=o.conFoto?'\n🧾 Te adjuntamos el comprobante del delivery.':(comp&&comp.url?`\n🧾 Comprobante del delivery: ${comp.url}`:'');
+  return `Hola 👋, te escribimos de ${cfg.negocio} 🥃\n\nPedido del ${fmtDate(p.fecha)} (${cliLabel(p.clienteId)}):\n${lines}${del}\n\n*Total: ${money(p.total)}*${zonaTxt(p)?`\n📍 Destino: ${zonaTxt(p)}`:''}${p.direccionEntrega?` · ${p.direccionEntrega}`:''}${p.cobroEnvio||envioCosto(p)?comprob:''}${p.pagado?'\n✅ Pago recibido, ¡gracias!':''}\n\n¡Saca el burro que tienes dentro! 🔥`;
 }
 
 /* ---------- Componentes ---------- */
@@ -811,7 +847,7 @@ const VIEWS={};
 VIEWS.inicio=()=>{
   const k=calc('mes'), all=calc('todo'), now=new Date(), h=now.getHours();
   const saludo=h<12?'¡Buenos días!':h<19?'¡Buenas tardes!':'¡Buenas noches!';
-  const steps=[['Crea tus productos (lo que vendes)',DB.Productos.length>0,'newProducto'],['Registra tus insumos (lo que usas)',DB.Insumos.length>0,'newInsumo'],['Marca tus clientes registrados ✅',nReg()>0,'goClientes'],['Registra una producción',DB.Produccion.length>0,'newLote'],['Anota tu primer pedido',DB.Pedidos.length>0,'newPedido']];
+  const steps=[['Crea tus productos (lo que vendes)',DB.Productos.length>0,'newProducto'],['Registra tus insumos (lo que usas)',DB.Insumos.length>0,'newInsumo'],['Marca tus pacientes registrados ✅',nReg()>0,'goClientes'],['Registra una producción',DB.Produccion.length>0,'newLote'],['Anota tu primer pedido',DB.Pedidos.length>0,'newPedido']];
   const done=steps.filter(s=>s[1]).length;
   const onboard=done<steps.length?`<div class="card onboard"><h3>🚀 Primeros pasos · ${done} de ${steps.length}</h3>
     <p class="muted sm" style="margin:2px 0 0">Hazlos en este orden y la app hará todas las cuentas por ti.</p>
@@ -820,7 +856,7 @@ VIEWS.inicio=()=>{
   const al=alertas();
   const s=serieMeses(6);
   const ult=[...DB.Pedidos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id)).slice(0,3);
-  const hero=done<steps.length?`<div class="hero"><img src="img/logo-emblema.jpg" alt=""><h2>¡Bienvenido!</h2><p>Aquí controlas producción, insumos, costos, clientes y ventas.</p><div class="slogan">Saca el burro que tienes dentro</div></div>`:'';
+  const hero=done<steps.length?`<div class="hero"><img src="img/logo-emblema.jpg" alt=""><h2>¡Bienvenido!</h2><p>Aquí controlas producción, insumos, costos, pacientes y ventas.</p><div class="slogan">Saca el burro que tienes dentro</div></div>`:'';
   return `
   ${installBanner()}${hero}<section class="hello"><h2>${saludo} 👋</h2><p>Así va ${esc(cfg.negocio)} en ${MESES_L[now.getMonth()]}.</p></section>
   ${onboard}
@@ -838,7 +874,7 @@ VIEWS.inicio=()=>{
     ${kpi('🏭','Producidas',fmtNum(k.botProd,0),`${k.nLotes} lote(s)`,'wine')}
     ${kpi('🛍️','Vendidas',fmtNum(k.botVend,0),`${k.nPed} pedido(s)`,'info')}
     ${kpi('🍾','Costo por unidad',k.costoBot?money(k.costoBot):'—','Promedio de tus lotes','warn')}
-    ${kpi('🧾','Ticket promedio',k.ticket?money(k.ticket):'—','Lo que gasta un cliente','')}
+    ${kpi('🧾','Ticket promedio',k.ticket?money(k.ticket):'—','Lo que gasta un paciente','')}
   </div>
   <div class="card" style="margin-top:14px"><h3>Entró vs. salió (últimos 6 meses)</h3><p class="muted sm" style="margin:0 0 8px">Si la barra verde es más alta que la roja, ese mes ganaste.</p>
     ${chart('chInicio',barCfg(s.labels,[{label:'Entró (ventas cobradas)',data:s.ing,backgroundColor:'#2e7d4f'},{label:'Salió (costos)',data:s.cos,backgroundColor:'#c0392b'}],true))}</div>
@@ -846,7 +882,7 @@ VIEWS.inicio=()=>{
   `;
 };
 function quickGrid(){
-  return `<div class="quick">${[['newPedido','🧾','Nuevo pedido'],['newLote','🏭','Registrar producción'],['newCompra','🛒','Compré insumos'],['newGasto','💸','Anotar un gasto'],['goClientes','👥','Mis clientes'],['newBoleta','📎','Subir boleta']]
+  return `<div class="quick">${[['newPedido','🧾','Nuevo pedido'],['newLote','🏭','Registrar producción'],['newCompra','🛒','Compré insumos'],['newGasto','💸','Anotar un gasto'],['goClientes','👥','Mis pacientes'],['newBoleta','📎','Subir boleta']]
     .map(([a,e,l])=>`<button type="button" class="qa" data-act="${a}"><span class="e">${e}</span>${l}</button>`).join('')}</div>`;
 }
 
@@ -859,13 +895,13 @@ function vPedidos(){
   const P=DB.Pedidos;
   const cnt={todos:P.length,pend:P.filter(p=>p.estado==='Pendiente').length,cobrar:P.filter(p=>!p.pagado&&p.estado!=='Cancelado').length,entregados:P.filter(p=>p.estado==='Entregado').length,cancel:P.filter(p=>p.estado==='Cancelado').length};
   return `${tip('Cada pedido <b>descuenta productos</b> de tu stock. Cuando te paguen, márcalo como <b>Cobrado</b>: solo lo cobrado cuenta como plata que entró.')}
-  <div class="toolbar"><input class="search" type="search" placeholder="🔍 Buscar N° de cliente o producto…" data-search="ped" value="${esc(route.q.ped)}"><button type="button" class="btn" data-act="newPedido">+ Nuevo</button></div>
+  <div class="toolbar"><input class="search" type="search" placeholder="🔍 Buscar N° de paciente o producto…" data-search="ped" value="${esc(route.q.ped)}"><button type="button" class="btn" data-act="newPedido">+ Nuevo</button></div>
   ${chips('fPed',[['todos',`Todos (${cnt.todos})`],['pend',`🕒 Por entregar (${cnt.pend})`],['cobrar',`⏳ Por cobrar (${cnt.cobrar})`],['entregados',`✅ Entregados (${cnt.entregados})`],['cancel',`❌ Cancelados (${cnt.cancel})`]],route.fPed)}
   <div id="list">${LISTS.ped()}</div>`;
 }
 const LISTS={};
 LISTS.ped=()=>{
-  if(!DB.Pedidos.length) return empty('🧾','Todavía no hay pedidos','Cuando un cliente te haga un pedido, anótalo aquí. Así sabrás qué entregar y quién te debe.',`<button type="button" class="btn" data-act="newPedido">+ Anotar primer pedido</button>`);
+  if(!DB.Pedidos.length) return empty('🧾','Todavía no hay pedidos','Cuando un paciente te haga un pedido, anótalo aquí. Así sabrás qué entregar y quién te debe.',`<button type="button" class="btn" data-act="newPedido">+ Anotar primer pedido</button>`);
   const f=route.fPed, q=route.q.ped.toLowerCase().trim();
   let L=[...DB.Pedidos].sort((a,b)=>(b.fecha+b.id).localeCompare(a.fecha+a.id));
   if(f==='pend') L=L.filter(p=>p.estado==='Pendiente');
@@ -886,7 +922,7 @@ function pedidoCard(p){
   <div class="actions">
     ${p.estado==='Pendiente'?`<button type="button" class="btn sm ok" data-act="pedEntregado" data-id="${p.id}">✓ Entregado</button>`:''}
     ${vivo&&!p.pagado?`<button type="button" class="btn sm gold" data-act="pedCobrado" data-id="${p.id}">💵 Cobrado</button>`:''}
-    <a class="btn sm wa" target="_blank" rel="noopener" href="${waLink('',pedidoMsg(p))}">WhatsApp</a>
+    <button type="button" class="btn sm wa" data-act="waPedido" data-id="${p.id}">WhatsApp${tieneComp('Pedidos',p.id)?' + 🧾':''}</button>
     <button type="button" class="btn sm ghost" data-act="editPedido" data-id="${p.id}">Editar</button>
   </div></div>`;
 }
@@ -1076,10 +1112,10 @@ function vGastos(){
 /* ===================== CLIENTES ===================== */
 VIEWS.clientes=()=>{
   const max=maxCli(), st=statsClientes(), compr=Object.keys(st).filter(id=>cliNum(id)>0).length;
-  return `<div class="page-head"><h2>👥 Clientes</h2></div>
-  ${tip(`Tus clientes son <b>números del 1 al ${max}</b>, igual que en tu cuaderno. Marca el recuadro ✅ cuando ese número ya esté <b>registrado</b>. Toca un número para ver sus compras.`)}
-  <div class="kpis" style="margin-bottom:12px">${kpi('✅','Registrados',`<span id="nRegKpi">${nReg()}</span> de ${max}`,'','ok')}${kpi('🛒','Han comprado',compr,'clientes con pedidos','warn')}</div>
-  <div class="toolbar"><input class="search" type="search" inputmode="numeric" placeholder="🔍 Buscar N° de cliente…" data-search="cli" value="${esc(route.q.cli)}"></div>
+  return `<div class="page-head"><h2>👥 Pacientes</h2></div>
+  ${tip(`Tus pacientes son <b>números del 1 al ${max}</b>, igual que en tu cuaderno. Marca el recuadro ✅ cuando ese número ya esté <b>registrado</b>. Toca un número para ver sus compras.`)}
+  <div class="kpis" style="margin-bottom:12px">${kpi('✅','Registrados',`<span id="nRegKpi">${nReg()}</span> de ${max}`,'','ok')}${kpi('🛒','Han comprado',compr,'pacientes con pedidos','warn')}</div>
+  <div class="toolbar"><input class="search" type="search" inputmode="numeric" placeholder="🔍 Buscar N° de paciente…" data-search="cli" value="${esc(route.q.cli)}"></div>
   ${chips('cFil',[['todos','Todos'],['reg','✅ Registrados'],['libres','⬜ Sin registrar'],['top','⭐ Los que más compran']],route.cFil)}
   <div id="list">${LISTS.cli()}</div>`;
 };
@@ -1096,8 +1132,8 @@ LISTS.cli=()=>{
 };
 function cliTile(c){
   return `<div class="ctile ${c.reg?'on':''}">
-    <button type="button" class="cnum" data-act="verCliente" data-id="${cliId(c.n)}" aria-label="Ver cliente ${c.n}"><b>${c.n}</b><small>${c.reg?'Registrado':'Sin registrar'}</small></button>
-    <label class="cbox" title="Registrado"><input type="checkbox" data-reg="${c.n}" ${c.reg?'checked':''} aria-label="Cliente ${c.n} registrado"><span></span></label>
+    <button type="button" class="cnum" data-act="verCliente" data-id="${cliId(c.n)}" aria-label="Ver paciente ${c.n}"><b>${c.n}</b><small>${c.reg?'Registrado':'Sin registrar'}</small></button>
+    <label class="cbox" title="Registrado"><input type="checkbox" data-reg="${c.n}" ${c.reg?'checked':''} aria-label="Paciente ${c.n} registrado"><span></span></label>
     ${c.s.n?`<span class="cbuy">🛒 ${c.s.n}</span>`:''}
   </div>`;
 }
@@ -1131,7 +1167,7 @@ VIEWS.reportes=()=>{
     ${kpi('🧾','Ticket promedio',k.ticket?money(k.ticket):'—','por pedido','')}
     ${kpi('🧪','Laboratorista',money(k.labTotal),k.nLab?`${k.nLab} pago(s) quincenal(es)`:'en el periodo','wine')}
     ${kpi('🚚','Delivery y embalaje',money(k.envios),`${k.nEnv} pedido(s)${k.envFlete?` · incluye ${money(k.envFlete)} de flete`:''}`,'bad')}
-    ${kpi('↩️','Envío cobrado a clientes',money(k.cobroEnvio),k.envios?`cubre el ${Math.round(k.cobroEnvio/k.envios*100)}% del costo`:'','ok')}
+    ${kpi('↩️','Envío cobrado a pacientes',money(k.cobroEnvio),k.envios?`cubre el ${Math.round(k.cobroEnvio/k.envios*100)}% del costo`:'','ok')}
   </div>
   <div class="grid2" style="margin-top:14px">
     <div class="card"><h3>💵 Entró vs. salió por mes</h3>${chart('chIV',barCfg(s.labels,[{label:'Entró',data:s.ing,backgroundColor:'#2e7d4f'},{label:'Salió',data:s.cos,backgroundColor:'#c0392b'}],true))}</div>
@@ -1140,17 +1176,17 @@ VIEWS.reportes=()=>{
     ${(()=>{const vt={};vpk.forEach(id=>{const pr=byId('Productos',id);const t=pr?pr.tipo:'Otro';vt[t]=(vt[t]||0)+vp[id].t});const ks=Object.keys(vt);return ks.length>1?`<div class="card"><h3>🏷️ Ventas por tipo de producto</h3>${chart('chVT',donutCfg(ks.map(t=>tipoIcon(t)+' '+t),ks.map(t=>vt[t])),true)}</div>`:''})()}
     <div class="card"><h3>🍾 Ventas por producto</h3>${vpk.length?chart('chVP',donutCfg(vpk.map(id=>prodName(byId('Productos',id))),vpk.map(id=>vp[id].t)),true):empty('🍾','Sin ventas en este periodo','')}</div>
   </div>
-  <div class="card"><h3>⭐ Clientes asiduos</h3><p class="muted sm" style="margin:0 0 8px">Ordenados por número de pedidos en el periodo.</p>
+  <div class="card"><h3>⭐ Pacientes asiduos</h3><p class="muted sm" style="margin:0 0 8px">Ordenados por número de pedidos en el periodo.</p>
     ${top.length?`${chart('chTC',hbarCfg(top5.map(id=>cliShort(id)),top5.map(id=>st[id].total)))}
-    <div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>Cliente</th><th class="r">Pedidos</th><th class="r">Unidades</th><th class="r">Total</th><th>Último</th><th></th></tr></thead><tbody>
+    <div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>#</th><th>Paciente</th><th class="r">Pedidos</th><th class="r">Unidades</th><th class="r">Total</th><th>Último</th><th></th></tr></thead><tbody>
     ${top.map((id,i)=>{const x=st[id],n=cliNum(id);return `<tr><td><span class="rank">${i+1}</span></td><td><b data-act="verCliente" data-id="${id}" style="cursor:pointer">N° ${n}</b>${isReg(n)?' ✅':''}</td><td class="r">${x.n}</td><td class="r">${fmtNum(x.bot,0)}</td><td class="r"><b>${money(x.total)}</b></td><td>${fmtDate(x.ultimo)}</td><td></td></tr>`}).join('')}
     </tbody></table></div>`:empty('⭐','Sin pedidos en este periodo','')}
   </div>
-  ${(()=>{const g={};k.ped.forEach(pd=>{const key=pd.zonaTipo==='Recojo'?'🏠 Recoge el cliente':pd.zona?`${pd.zonaTipo==='Provincia'?'🛣️':'🏙️'} ${pd.zona}`:'— Sin destino';const o=g[key]||(g[key]={n:0,e:0,m:0,f:0,c:0,t:pd.zonaTipo});o.n++;o.e+=num(pd.costoEnvio);o.m+=num(pd.costoEmbalaje);o.f+=num(pd.costoFlete);o.c+=num(pd.cobroEnvio)});
+  ${(()=>{const g={};k.ped.forEach(pd=>{const key=pd.zonaTipo==='Recojo'?'🏠 Recoge el paciente':pd.zona?`${pd.zonaTipo==='Provincia'?'🛣️':'🏙️'} ${pd.zona}`:'— Sin destino';const o=g[key]||(g[key]={n:0,e:0,m:0,f:0,c:0,t:pd.zonaTipo});o.n++;o.e+=num(pd.costoEnvio);o.m+=num(pd.costoEmbalaje);o.f+=num(pd.costoFlete);o.c+=num(pd.cobroEnvio)});
     const ks=Object.keys(g).sort((a,b)=>(g[b].e+g[b].m+g[b].f)-(g[a].e+g[a].m+g[a].f)); if(!ks.length) return '';
     const tl=t=>sum(Object.values(g).filter(o=>o.t===t),o=>o.e+o.m+o.f);
     return `<div class="card"><h3>🚚 Envíos por destino</h3><p class="muted sm" style="margin:0 0 8px">Cuánto te cuesta llevar los pedidos a cada distrito o provincia.</p>
-    <div class="minis" style="margin:0 0 10px"><div><small>🏙️ Lima</small><b>${money(tl('Lima'))}</b></div><div><small>🛣️ Provincia</small><b>${money(tl('Provincia'))}</b></div><div><small>Cobrado a clientes</small><b class="t-ok">${money(k.cobroEnvio)}</b></div></div>
+    <div class="minis" style="margin:0 0 10px"><div><small>🏙️ Lima</small><b>${money(tl('Lima'))}</b></div><div><small>🛣️ Provincia</small><b>${money(tl('Provincia'))}</b></div><div><small>Cobrado a pacientes</small><b class="t-ok">${money(k.cobroEnvio)}</b></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Destino</th><th class="r">Pedidos</th><th class="r">Delivery</th><th class="r">Embalaje</th><th class="r">Flete</th><th class="r">Total</th><th class="r">Prom./pedido</th><th class="r">Cobrado</th></tr></thead><tbody>
     ${ks.map(key=>{const o=g[key],t=o.e+o.m+o.f;return `<tr><td><b>${esc(key)}</b></td><td class="r">${o.n}</td><td class="r">${money(o.e)}</td><td class="r">${money(o.m)}</td><td class="r">${money(o.f)}</td><td class="r"><b>${money(t)}</b></td><td class="r">${money(t/o.n)}</td><td class="r t-ok">${money(o.c)}</td></tr>`}).join('')}
     </tbody></table></div></div>`})()}
@@ -1160,7 +1196,7 @@ VIEWS.reportes=()=>{
     </tbody></table></div>`:empty('🏭','Sin producción en este periodo','')}
   </div>
   <div class="card"><h3>⬇️ Descargar en Excel (CSV)</h3><p class="muted sm" style="margin:0 0 10px">Se abre en Excel o Google Sheets.</p>
-    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="csv" data-t="clientes">👥 Clientes</button><button type="button" class="btn sm ghost" data-act="csv" data-t="pedidos">🧾 Pedidos</button><button type="button" class="btn sm ghost" data-act="csv" data-t="produccion">🏭 Producción</button><button type="button" class="btn sm ghost" data-act="csv" data-t="costos">💸 Costos</button><button type="button" class="btn sm ghost" data-act="csv" data-t="comprobantes">📎 Boletas</button></div>
+    <div class="btn-row"><button type="button" class="btn sm ghost" data-act="csv" data-t="clientes">👥 Pacientes</button><button type="button" class="btn sm ghost" data-act="csv" data-t="pedidos">🧾 Pedidos</button><button type="button" class="btn sm ghost" data-act="csv" data-t="produccion">🏭 Producción</button><button type="button" class="btn sm ghost" data-act="csv" data-t="costos">💸 Costos</button><button type="button" class="btn sm ghost" data-act="csv" data-t="comprobantes">📎 Boletas</button></div>
   </div>`;
 };
 
@@ -1306,7 +1342,7 @@ function formPedido(p={},preCli){
   const rid=p.id||uid();
   if(!DB.Productos.length) return needFirst('Primero crea al menos un producto para poder venderlo.','newProducto','Crear producto');
   const items=(p.items&&p.items.length)?p.items:[{}];
-  const cliOpts=[['','— Elige el N° de cliente —']];for(let n=1;n<=maxCli();n++) cliOpts.push([cliId(n),`N° ${n}${isReg(n)?'  ✓':''}`]);
+  const cliOpts=[['','— Elige el N° de paciente —']];for(let n=1;n<=maxCli();n++) cliOpts.push([cliId(n),`N° ${n}${isReg(n)?'  ✓':''}`]);
   const preC=byId('Clientes',p.clienteId||preCli)||{};
   const zt0=p.id?(p.zonaTipo||'Lima'):(preC.zonaTipo||'Lima'), z0=p.id?p.zona:(preC.zona||'');
   const envVals=f=>({e:num(f.elements.costoEnvio.value),m:num(f.elements.costoEmbalaje.value),fl:num(f.elements.costoFlete.value)});
@@ -1317,7 +1353,7 @@ function formPedido(p={},preCli){
       if(t.dataset.role==='prod') delete pi.dataset.manual;
       if(pr&&!pi.dataset.manual) pi.value=precioPara(pr,num($('[data-role=qty]',row).value));}
     const cn=cliNum(el.clienteId.value); $('#regWrap').hidden=!cn||isReg(cn); $('#regN').textContent=cn||'';
-    // destino: al elegir cliente, traer su distrito/provincia
+    // destino: al elegir paciente, traer su distrito/provincia
     if(t&&t.name==='clienteId'&&!p.id){const c=byId('Clientes',el.clienteId.value);if(c&&c.zona&&!el.zona.value){el.zonaTipo.value=c.zonaTipo||'Lima';el.zona.value=c.zona}}
     const zt=el.zonaTipo.value, recojo=zt==='Recojo';
     $('#envBox').hidden=recojo; $('#zonaWrap').style.visibility=recojo?'hidden':'visible';
@@ -1327,18 +1363,19 @@ function formPedido(p={},preCli){
     if(ult&&t&&(t.name==='zona'||t.name==='clienteId'||t.name==='zonaTipo')&&!v.e&&!v.m&&!v.fl){el.costoEnvio.value=ult.costoEnvio||'';el.costoEmbalaje.value=ult.costoEmbalaje||'';el.costoFlete.value=ult.costoFlete||'';f.dataset.autoEnv=1}
     $('#envHint').innerHTML=ult?`<span>💡 Último envío a <b>${esc(ult.zona)}</b>: ${money(envioCosto(ult))}${f.dataset.autoEnv?' (ya cargado)':''}</span>${f.dataset.autoEnv?'':`<button type="button" class="btn sm gold" data-act="usarUltEnvio">Usar</button>`}`:'';
     $('#envHint').hidden=!ult;
+    { const V0=envVals(f), ce0=V0.e+V0.m+V0.fl; el.cobroEnvio.readOnly=el.pacPaga.checked; el.cobroEnvio.style.background=el.pacPaga.checked?'#f8f0e4':''; if(el.pacPaga.checked&&!recojo) el.cobroEnvio.value=ce0?+ce0.toFixed(2):''; }
     const its=readPed(f), sub=sum(its,i=>i.cantidad*i.precio), V=envVals(f), ce=recojo?0:V.e+V.m+V.fl, cobro=recojo?0:num(el.cobroEnvio.value), tot=sub+cobro;
     const falta=its.filter(i=>i.cantidad>stockProd(i.productoId,p.id)).map(i=>`${esc(prodName(byId('Productos',i.productoId)))} (hay ${fmtNum(stockProd(i.productoId,p.id),0)})`);
     const mayor=its.some(i=>{const pr=byId('Productos',i.productoId);return pr&&pr.precioMayor>0&&i.precio===pr.precioMayor&&i.cantidad>=pr.minMayor});
     $('#pCalc').innerHTML=`<div class="calc-row"><span>Productos (${fmtNum(sum(its,i=>i.cantidad),0)} u.)</span><b>${money(sub)}</b></div>
-      ${cobro?`<div class="calc-row"><span>+ Envío cobrado al cliente</span><b>${money(cobro)}</b></div>`:''}
-      <div class="calc-row total big"><span>Total que paga el cliente</span><b>${money(tot)}</b></div>
+      ${cobro?`<div class="calc-row"><span>+ Delivery que paga el paciente</span><b>${money(cobro)}</b></div>`:''}
+      <div class="calc-row total big"><span>Total que paga el paciente</span><b>${money(tot)}</b></div>
       ${mayor?'<div class="calc-row" style="color:var(--ok)"><span>💰 Se aplicó precio por mayor</span></div>':''}
-      ${ce?`<div class="calc-row" style="color:var(--bad)"><span>🚚 Tu costo de delivery y embalaje</span><b>− ${money(ce)}</b></div><div class="calc-row"><span>Te queda después del envío</span><b>${money(tot-ce)}</b></div>`:''}
+      ${ce?`<div class="calc-row" style="color:var(--bad)"><span>🚚 Tu costo de delivery y embalaje</span><b>− ${money(ce)}</b></div><div class="calc-row"><span>Te queda después del envío</span><b>${money(tot-ce)}</b></div>${cobro>=ce-0.005?'<div class="calc-row" style="color:var(--ok)"><span>✅ El paciente cubre el delivery</span></div>':''}`:''}
       ${falta.length?`<div class="warnbox">⚠️ No alcanza el stock: ${falta.join(', ')}. Puedes guardarlo igual y producir después.</div>`:''}`;
   };
   openSheet(p.id?'Editar pedido':'🧾 Nuevo pedido',`
-    <div class="row2 stack">${field('Fecha',inp('fecha',p.fecha||today(),'type="date" required'))}${field('Cliente N° *',sel('clienteId',cliOpts,p.clienteId||preCli||'','required'))}</div>
+    <div class="row2 stack">${field('Fecha',inp('fecha',p.fecha||today(),'type="date" required'))}${field('Paciente N° *',sel('clienteId',cliOpts,p.clienteId||preCli||'','required'))}</div>
     <label class="check" id="regWrap" hidden><input type="checkbox" name="marcarReg" checked><span>✅ Marcar el N° <b id="regN"></b> como registrado</span></label>
     <div class="lines-head"><b>¿Qué pidió?</b></div>
     <div class="lines-cols"><span>Producto</span><span>Cant.</span><span>Precio c/u</span><span></span></div>
@@ -1351,7 +1388,8 @@ function formPedido(p={},preCli){
         <div class="envhint" id="envHint" hidden></div>
         <div class="row3">${field(`Delivery (${cfg.moneda})`,inp('costoEnvio',p.costoEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}${field(`Embalaje (${cfg.moneda})`,inp('costoEmbalaje',p.costoEmbalaje||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}${field(`Flete (${cfg.moneda})`,inp('costoFlete',p.costoFlete||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00"'))}</div>
         <small class="muted" style="display:block;margin:-6px 0 10px">Lo que <b>tú pagas por este pedido</b>: delivery/courier, embalaje (cajas, burbupack) y flete a provincia.</small>
-        ${field(`¿Le cobras el envío al cliente? (${cfg.moneda})`,inp('cobroEnvio',p.cobroEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00 si es gratis"'),'Se suma al total del pedido.')}
+        <label class="check" style="margin-bottom:10px"><input type="checkbox" name="pacPaga" ${(p.id?(num(p.cobroEnvio)>0&&Math.abs(num(p.cobroEnvio)-envioCosto(p))<0.01):true)?'checked':''}><span>🧾 El paciente paga el delivery<br><small class="muted" style="font-weight:600">Se le cobra lo mismo que cuesta (delivery + embalaje + flete)</small></span></label>
+        ${field(`Delivery que se le cobra al paciente (${cfg.moneda})`,inp('cobroEnvio',p.cobroEnvio||'','type="number" step="0.01" min="0" inputmode="decimal" placeholder="0.00 si es gratis"'),'Se suma al total del pedido. Desmarca la casilla si cobras otro monto o es gratis.')}
         ${adjuntosBox('Pedidos',p.id,'Comprobante del envío (delivery / agencia)')}
       </div>
       ${field('Referencia de entrega (opcional)',inp('direccionEntrega',p.direccionEntrega,'placeholder="Ej: agencia Shalom, mercado, puesto 12…"'))}
@@ -1364,7 +1402,7 @@ function formPedido(p={},preCli){
    onSubmit:(d,f)=>{
      const its=readPed(f); if(!its.length){toast('Agrega al menos un producto','bad');return false}
      const cid=d.clienteId, cn=cliNum(cid);
-     if(!cn){toast('Elige el número del cliente','bad');return false}
+     if(!cn){toast('Elige el número del paciente','bad');return false}
      if(!isReg(cn)&&f.elements.marcarReg.checked) setRegistrado(cn,true);
      const recojo=d.zonaTipo==='Recojo', zona=recojo?'':(d.zona||'').trim();
      const sub=+sum(its,i=>i.cantidad*i.precio).toFixed(2), cobro=recojo?0:num(d.cobroEnvio);
@@ -1392,7 +1430,7 @@ function verCliente(id){
   const deuda=sum(act.filter(p=>!p.pagado),p=>p.total);
   const fav={}; act.forEach(p=>(p.items||[]).forEach(i=>fav[i.productoId]=(fav[i.productoId]||0)+num(i.cantidad)));
   const favId=Object.keys(fav).sort((a,b)=>fav[b]-fav[a])[0];
-  openSheet(`Cliente N° ${n}`,`
+  openSheet(`Paciente N° ${n}`,`
     <label class="regbig ${reg?'on':''}"><span class="cbox"><input type="checkbox" data-reg="${n}" ${reg?'checked':''}><span></span></span><span>Registrado en mi cuaderno${act.length>=3?' <span class="badge gold">⭐ Frecuente</span>':''}</span></label>
     <div class="subcard" style="padding-bottom:4px"><b>📍 Destino habitual</b>
       <div class="row2">${field('Lima / Provincia',sel('zonaTipo',ZONA_TIPOS.slice(0,2),(byId('Clientes',id)||{}).zonaTipo||'Lima'))}${field('Distrito / provincia',inp('zona',(byId('Clientes',id)||{}).zona||'','list="dlZonaC" placeholder="Ej: Chorrillos" autocomplete="off"'))}</div>
@@ -1420,7 +1458,7 @@ function formAjustes(){
     <div class="calc" style="margin-top:0">${estado}</div>
     ${esApp()?'<div class="calc">📲 Estás usando la <b>app instalada</b>.</div>':`<button type="button" class="btn gold block" data-act="install">📲 Instalar en este celular</button>`}
     <div class="row2">${field('Nombre del negocio',inp('negocio',cfg.negocio))}${field('Moneda',inp('moneda',cfg.moneda,'placeholder="S/"'))}</div>
-    ${field('Cantidad de números de clientes',inp('maxClientes',maxCli(),'type="number" min="10" max="2000" step="1" inputmode="numeric"'),'Por defecto del 1 al 100. Súbelo cuando tu cuaderno tenga más.')}
+    ${field('Cantidad de números de pacientes',inp('maxClientes',maxCli(),'type="number" min="10" max="2000" step="1" inputmode="numeric"'),'Por defecto del 1 al 100. Súbelo cuando tu cuaderno tenga más.')}
     <div class="btn-row"><button type="button" class="btn sm ghost" data-act="syncNow">🔄 Actualizar datos</button><button type="button" class="btn sm ghost" data-act="backup">⬇️ Descargar copia</button></div>
     <p class="muted sm" style="text-align:center;margin:4px 0 0">Versión ${APP_VERSION}</p>
     ${ADMIN?`<h4 style="margin:16px 0 6px;font-weight:900">🛠️ Administrador</h4>
@@ -1439,7 +1477,7 @@ function ayuda(){
     <h4>🔁 El ciclo del negocio</h4>
     <ol><li><b>Compras insumos</b> 🛒 → suben en tu almacén.</li><li><b>Produces un lote</b> 🏭 → se descuentan insumos y sube tu stock.</li><li><b>Vendes en un pedido</b> 🧾 → baja el stock.</li><li><b>Te pagan</b> 💵 → eso es plata que entró.</li></ol>
     <h4>📖 Palabras clave</h4>
-    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Laboratorista:</b> se le paga cada quincena. Registra el pago en Producción → 🧪 Laborat.; se reparte entre lo producido en esa quincena y suma al costo por unidad.</li><li><b>Delivery y embalaje:</b> son costos de cada pedido; se anotan dentro del pedido.</li><li><b>Boletas 📎:</b> en cada compra, gasto y envío puedes tomar una foto o subir un PDF del comprobante. Se convierte en un link (ImgBB) y la hoja guarda solo ese link. En Producción → 📎 Boletas ves todas y lo que falta adjuntar.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Clientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Cliente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
+    <ul><li><b>Plata que entró:</b> pedidos marcados como cobrados.</li><li><b>Plata que salió:</b> compras de insumos + gastos + otros costos de lotes + envíos, embalajes y fletes de los pedidos.</li><li><b>Laboratorista:</b> se le paga cada quincena. Registra el pago en Producción → 🧪 Laborat.; se reparte entre lo producido en esa quincena y suma al costo por unidad.</li><li><b>Delivery y embalaje:</b> son costos de cada pedido; se anotan dentro del pedido.</li><li><b>Boletas 📎:</b> en cada compra, gasto y envío puedes tomar una foto o subir un PDF del comprobante. Se convierte en un link (ImgBB) y la hoja guarda solo ese link. En Producción → 📎 Boletas ves todas y lo que falta adjuntar.</li><li><b>Envíos:</b> en cada pedido anota el destino (distrito o provincia) y lo que pagaste de envío, embalaje y flete. La app recuerda el último costo a cada destino.</li><li><b>Ganancia:</b> lo que entró menos lo que salió.</li><li><b>Costo por unidad:</b> lo que te costó el lote ÷ lo que salió (botellas, bolsas, frascos…).</li><li><b>Tipos de producto:</b> líquidos, sólidos o los que crees. Se eligen al crear un producto.</li><li><b>Te deben:</b> pedidos que aún no te pagan.</li><li><b>Pacientes:</b> son números (1, 2, 3…) como en tu cuaderno. El ✅ indica que ya está registrado.</li><li><b>Paciente frecuente ⭐:</b> 3 pedidos o más.</li></ul>
     <h4>📲 Tenla como app en tu celular</h4>
     <p>Toca <b>Instalar</b> (en Inicio o en ⚙️ Ajustes) y tendrás el ícono del burro en tu pantalla de inicio. Cuando haya mejoras, se actualiza sola: <b>no hace falta volver a instalar</b>.</p>
     <h4>🟢 El punto de arriba</h4>
@@ -1455,8 +1493,8 @@ function csv(name,rows){
 }
 const dec=n=>String(+(+n).toFixed(2)).replace('.',',');
 const CSVS={
-  clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° cliente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Unidades:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
-  pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Cliente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Subtotal:dec(p.subtotal||p.total-num(p.cobroEnvio)),'Envío cobrado':dec(p.cobroEnvio),Total:dec(p.total),'Tipo destino':p.zonaTipo,Destino:p.zona,'Costo delivery':dec(p.costoEnvio),'Costo embalaje':dec(p.costoEmbalaje),'Costo flete':dec(p.costoFlete),Estado:p.estado,Cobrado:p.pagado?'Sí':'No','Forma de pago':p.metodoPago,Referencia:p.direccionEntrega})),
+  clientes:()=>{const st=statsClientes(),o=[];for(let n=1;n<=maxCli();n++){const x=st[cliId(n)]||{n:0,bot:0,total:0,ultimo:''};o.push({'N° paciente':n,Registrado:isReg(n)?'Sí':'No',Pedidos:x.n,Unidades:x.bot,'Total comprado':dec(x.total),'Último pedido':x.ultimo})}return o},
+  pedidos:()=>DB.Pedidos.map(p=>({Fecha:p.fecha,Paciente:cliShort(p.clienteId),Productos:(p.items||[]).map(i=>`${i.cantidad} x ${prodName(byId('Productos',i.productoId))}`).join(' | '),Subtotal:dec(p.subtotal||p.total-num(p.cobroEnvio)),'Envío cobrado':dec(p.cobroEnvio),Total:dec(p.total),'Tipo destino':p.zonaTipo,Destino:p.zona,'Costo delivery':dec(p.costoEnvio),'Costo embalaje':dec(p.costoEmbalaje),'Costo flete':dec(p.costoFlete),Estado:p.estado,Cobrado:p.pagado?'Sí':'No','Forma de pago':p.metodoPago,Referencia:p.direccionEntrega})),
   produccion:()=>DB.Produccion.map(l=>({Fecha:l.fecha,Producto:prodName(byId('Productos',l.productoId)),Tipo:(byId('Productos',l.productoId)||{}).tipo||'',Cantidad:l.botellas,Unidad:(byId('Productos',l.productoId)||{}).unidad||'','Costo insumos':dec(l.costoInsumos),Laboratorista:dec(labLote(l)),'Otros costos':dec(l.otrosCostos),'Costo total':dec(costoLote(l)),'Costo por unidad':dec(l.botellas?costoLote(l)/l.botellas:0),Nota:l.nota})),
   comprobantes:()=>DB.Comprobantes.map(c=>({Fecha:c.fecha,Tipo:c.tipo,Monto:dec(c.monto),Emisor:c.proveedor,'Vinculado a':c.refTipo&&c.refId&&byId(c.refTipo,c.refId)?refText(c.refTipo,c.refId):c.referencia,Nota:c.nota,Link:c.url,'Link para borrar':c.deleteUrl})),
   costos:()=>[...DB.Compras.map(c=>{const i=byId('Insumos',c.insumoId);return {Fecha:c.fecha,Tipo:'Compra de insumo',Detalle:`${c.cantidad} ${i?i.unidad:''} ${i?i.nombre:''}`.trim(),Monto:dec(c.costoTotal)}}),
@@ -1507,6 +1545,9 @@ const ACT={
     if(r&&r[campo]===c.url){const otro=compsDe(c.refTipo,c.refId)[0];saveRow(c.refTipo,Object.assign({},r,{[campo]:otro?otro.url:''}))}
     toast('Boleta eliminada 🗑️');render()},
   verCliente:d=>verCliente(d.id),
+  waPedido:d=>waPedido(d.id),
+  waShare:d=>{const f=SH&&SH.waFile,p=byId('Pedidos',d.id);if(!f||!p)return;
+    navigator.share({files:[f],text:pedidoMsg(p,{conFoto:true})}).then(()=>{closeSheet();toast('📤 Enviado ✅')}).catch(e=>{if(e&&e.name!=='AbortError')toast('No se pudo compartir: usa “Enviar solo el texto”','warn')})},
   guardarZona:d=>{const f=$('#shForm'),z=f.elements.zona.value.trim();setZonaCliente(+d.n,f.elements.zonaTipo.value,z);toast(z?`📍 N° ${d.n}: ${z}`:'Destino borrado');render()},
   usarUltEnvio:()=>{const f=$('#shForm'),u=ultimoEnvio(f.elements.zonaTipo.value,f.elements.zona.value);if(!u)return;f.elements.costoEnvio.value=u.costoEnvio||'';f.elements.costoEmbalaje.value=u.costoEmbalaje||'';f.elements.costoFlete.value=u.costoFlete||'';f.dataset.autoEnv=1;SH.onInput(null,f)},
   pedEntregado:d=>{const p=byId('Pedidos',d.id);saveRow('Pedidos',Object.assign({},p,{estado:'Entregado'}));toast('Pedido entregado 🚚');if(SH)verCliente(p.clienteId);render()},

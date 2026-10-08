@@ -2,7 +2,7 @@
 
 > **SACA EL BURRO QUE TIENES DENTRO**
 
-App web para celular y computadora que controla **producción, insumos, costos, clientes, pedidos e ingresos** de El Látigo.
+App web para celular y computadora que controla **producción, insumos, costos, pacientes, pedidos e ingresos** de El Látigo.
 
 - **Base de datos:** Google Sheets **Látigo_BD** ([abrir](https://docs.google.com/spreadsheets/d/1kaNDTvYF2sQOqTzfiD9spfPKtSpaqiExUzpyTMMec6U/edit))
 - **Publicación:** GitHub + Vercel
@@ -37,7 +37,7 @@ Recomendado: repositorio de GitHub **privado**, porque `index.html` lleva la cla
 3. *(Recomendado)* ⚙️ **Configuración del proyecto** → marca **“Mostrar el archivo de manifiesto appsscript.json”**. Abre ese archivo en el editor y reemplázalo con **`apps-script/appsscript.json`**, que fija la zona horaria de Lima y los permisos justos.
 4. Arriba elige la función **`setup`** y pulsa **▶ Ejecutar**.
    - Google pedirá permisos: *Revisar permisos → tu cuenta → Configuración avanzada → Ir a … (no seguro) → Permitir*. Es normal, el script es tuyo.
-   - Se crean 7 pestañas en Látigo_BD: Productos, Insumos, Compras, Produccion, Clientes, Pedidos y Gastos.
+   - Se crean 7 pestañas en Látigo_BD: Productos, Insumos, Compras, Produccion, Clientes (pacientes), Pedidos y Gastos.
    - En el **Registro de ejecución** aparece: *✅ "Látigo_BD" lista y conectada.*
 5. *(Solo la primera vez)* **Implementar → Nueva implementación → ⚙️ Aplicación web**:
    - *Ejecutar como:* **Yo**
@@ -115,16 +115,18 @@ El usuario normal no ve estas opciones.
 2. **Producción → Almacén:** registra tus insumos con lo que tienes hoy y un mínimo para alertas.
 3. **Producción → Compras:** cada compra suma al almacén y fija el precio promedio.
 4. **Producción → Lotes:** cada producción descuenta insumos, suma botellas y calcula el **costo por botella**.
-5. **Ventas → Pedidos:** cliente (nuevo o existente), productos y dirección. Botones *✓ Entregado*, *💵 Cobrado* y *WhatsApp* con el pedido ya escrito.
+5. **Ventas → Pedidos:** paciente (nuevo o existente), productos y dirección. Botones *✓ Entregado*, *💵 Cobrado* y *WhatsApp* con el pedido ya escrito.
 5b. **Envíos en cada pedido (🚚):**
-   - Elige el destino: **Lima (distrito)**, **Provincia** o **Recoge el cliente**.
-   - Anota lo que tú pagas en ese pedido de **delivery, embalaje y flete** (cada pedido es un evento), y si quieres, lo que **le cobras al cliente** por el envío (se suma al total).
-   - Cada número de cliente recuerda su distrito o provincia, y la app sugiere el costo del último envío a ese destino.
+   - Con la casilla **🧾 El paciente paga el delivery** se le cobra lo mismo que cuesta (delivery + embalaje + flete).
+   - El botón **WhatsApp + 🧾** del pedido envía el mensaje **con la foto del comprobante del delivery**, usando la opción *Compartir* del celular. Si el equipo no lo permite, envía el texto con el link de la foto.
+   - Elige el destino: **Lima (distrito)**, **Provincia** o **Recoge el paciente**.
+   - Anota lo que tú pagas en ese pedido de **delivery, embalaje y flete** (cada pedido es un evento), y si quieres, lo que **le cobras al paciente** por el envío (se suma al total).
+   - Cada número de paciente recuerda su distrito o provincia, y la app sugiere el costo del último envío a ese destino.
    - En **Reportes → Envíos por destino** ves cuánto cuesta enviar a cada distrito o provincia.
    - **🧪 Laboratorista (pago quincenal):** en *Producción → 🧪 Laborat.* se registra cada pago de quincena (1–15 y 16–fin de mes). El monto se reparte entre las unidades producidas en esa quincena y suma al costo por unidad. La app muestra si la quincena actual y la anterior están pagadas, y avisa en Inicio si falta registrar una.
 6. **Producción → Gastos:** delivery, luz, publicidad, mano de obra…
-7. **Clientes:** son **números del 1 al 100**, como en el cuaderno del dueño (no se guardan nombres ni teléfonos). Cada número tiene un recuadro ✅ *Registrado* que se activa o desactiva con un toque. Al tocar el número se ve su historial, cuánto compró, cuánto debe y su producto favorito. La cantidad de números se cambia en ⚙️ Ajustes.
-8. **Reportes:** gráficos, ranking de clientes asiduos y descargas para Excel.
+7. **Pacientes:** son **números del 1 al 100**, como en el cuaderno del dueño (no se guardan nombres ni teléfonos). Cada número tiene un recuadro ✅ *Registrado* que se activa o desactiva con un toque. Al tocar el número se ve su historial, cuánto compró, cuánto debe y su producto favorito. La cantidad de números se cambia en ⚙️ Ajustes.
+8. **Reportes:** gráficos, ranking de pacientes asiduos y descargas para Excel.
 
 **Cómo calcula:**
 - *Plata que entró* = pedidos cobrados.
@@ -159,7 +161,7 @@ El usuario normal no ve estas opciones.
 ## 🔐 Seguridad
 
 - Las boletas están en ImgBB: las ve quien tenga su link (está en la hoja y en la app).
-- La app no tiene usuario ni contraseña: **quien tenga el link de la web puede ver y editar los datos** (ventas, costos y pedidos; los clientes son solo números). Compártelo solo con quien use la app y no lo publiques.
+- La app no tiene usuario ni contraseña: **quien tenga el link de la web puede ver y editar los datos** (ventas, costos y pedidos; los pacientes son solo números). Compártelo solo con quien use la app y no lo publiques.
 - La clave va dentro de `index.html`. Si quieres que nadie más la vea, deja el repositorio de GitHub en **privado** (Vercel funciona igual).
 - Sin internet la app sigue funcionando: guarda en el celular y sube los cambios cuando vuelve la conexión.
 - Haz respaldos de vez en cuando desde **⚙️ → Descargar respaldo**.
